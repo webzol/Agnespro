@@ -159,8 +159,82 @@
   });
 
   // ---------- New job ----------
+  // Mode tabs (upload vs AI generate)
+  const switchMode = (mode) => {
+    $$(".mode-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
+    $$(".mode-panel").forEach((p) => p.classList.toggle("hidden", p.dataset.mode !== mode));
+  };
+  $$(".mode-tab").forEach((t) => t.addEventListener("click", () => switchMode(t.dataset.mode)));
+
   $("#parse-btn").addEventListener("click", () => parseOnly());
   $("#create-btn").addEventListener("click", () => createJob());
+
+  // AI script generation
+  $("#ai-generate-btn").addEventListener("click", () => generateScript());
+  $("#ai-apply-btn").addEventListener("click", () => applyGeneratedScript());
+  $("#ai-discard-btn").addEventListener("click", () => discardGeneratedScript());
+
+  let lastGeneratedScript = "";
+  let lastGeneratedTitle = "";
+
+  async function generateScript() {
+    const idea = $("#ai-idea").value.trim();
+    if (!idea) { toast("请先输入你的想法", "err"); $("#ai-idea").focus(); return; }
+    const title = $("#ai-title").value.trim();
+    const style = $("#ai-style").value.trim();
+    const genre = $("#ai-genre").value;
+    const length = $("#ai-length").value;
+    const btn = $("#ai-generate-btn");
+    const btnText = btn.querySelector(".ai-btn-text");
+    const result = $("#ai-result");
+    const applyRow = $("#ai-apply-row");
+    btn.disabled = true;
+    if (btnText) btnText.textContent = "生成中…";
+    result.className = "ai-result loading";
+    result.classList.remove("hidden");
+    result.textContent = "✨ AI 正在创作剧本,请稍候(通常 10-30 秒)…";
+    applyRow.classList.add("hidden");
+    try {
+      const r = await api.post("/api/scripts/generate", { title, style, idea, genre, length, lang: "zh" });
+      lastGeneratedScript = r.script || "";
+      lastGeneratedTitle = r.title || title || "未命名剧本";
+      result.className = "ai-result ok";
+      result.innerHTML = "";
+      const h4 = document.createElement("h4");
+      h4.textContent = "已生成剧本 (" + lastGeneratedScript.length + " 字)";
+      result.appendChild(h4);
+      const pre = document.createElement("pre");
+      pre.textContent = lastGeneratedScript;
+      result.appendChild(pre);
+      applyRow.classList.remove("hidden");
+      toast("已生成剧本", "ok");
+    } catch (e) {
+      result.className = "ai-result err";
+      result.textContent = "生成失败:" + e.message;
+    } finally {
+      btn.disabled = false;
+      if (btnText) btnText.textContent = "✨ 生成剧本";
+    }
+  }
+
+  function applyGeneratedScript() {
+    if (!lastGeneratedScript) return;
+    $("#job-title").value = lastGeneratedTitle || "";
+    $("#job-script").value = lastGeneratedScript;
+    // also pull style over if user had set one in the AI form
+    const aiStyle = $("#ai-style").value.trim();
+    if (aiStyle && !$("#job-style").value.trim()) $("#job-style").value = aiStyle;
+    switchMode("manual");
+    toast("已填入,可继续编辑后创建任务", "ok");
+    setTimeout(() => $("#job-script").focus(), 100);
+  }
+
+  function discardGeneratedScript() {
+    lastGeneratedScript = "";
+    lastGeneratedTitle = "";
+    $("#ai-result").classList.add("hidden");
+    $("#ai-apply-row").classList.add("hidden");
+  }
 
   async function parseOnly() {
     const script = $("#job-script").value.trim();

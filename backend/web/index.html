@@ -95,27 +95,86 @@
   <section class="view" data-view="new">
     <div class="card glass">
       <h2>新任务</h2>
-      <p class="muted">输入剧本标题、风格提示,粘贴剧本正文。提交后可在 Jobs 页面发起生成。</p>
-      <div class="form">
-        <label>
-          <span>标题</span>
-          <input id="job-title" type="text" placeholder="例:咖啡店的奇妙夜晚">
-        </label>
-        <label>
-          <span>视觉风格(可选)</span>
-          <input id="job-style" type="text" placeholder="例:日式动画、电影感夜景、柔光暖色调">
-        </label>
-        <label>
-          <span>剧本正文</span>
-          <textarea id="job-script" rows="14" placeholder="第1集 雨夜&#10;咖啡店里,林夏正看着窗外发呆。门铃响起,一个男人推门而入...&#10;&#10;第2集 重逢&#10;..."></textarea>
-          <span class="hint">剧集标记支持:第N集 / Episode N / EP N / Scene N。检测不到标记时,整段作为单集处理。</span>
-        </label>
-        <div class="form-actions">
-          <button class="btn glass" id="parse-btn">仅解析剧集</button>
-          <button class="btn primary" id="create-btn"><span>创建任务</span></button>
+      <p class="muted">你可以粘贴已有的剧本,或者告诉 AI 你的想法,让它帮你生成一份。</p>
+
+      <div class="mode-tabs glass" id="mode-tabs">
+        <button class="mode-tab active" data-mode="manual">📝 上传剧本</button>
+        <button class="mode-tab" data-mode="ai">✨ AI 生成剧本</button>
+      </div>
+
+      <!-- 模式 1: 手动上传 -->
+      <div class="mode-panel" data-mode="manual">
+        <div class="form">
+          <label>
+            <span>标题</span>
+            <input id="job-title" type="text" placeholder="例:咖啡店的奇妙夜晚">
+          </label>
+          <label>
+            <span>视觉风格(可选)</span>
+            <input id="job-style" type="text" placeholder="例:日式动画、电影感夜景、柔光暖色调">
+          </label>
+          <label>
+            <span>剧本正文</span>
+            <textarea id="job-script" rows="14" placeholder="第1集 雨夜&#10;咖啡店里,林夏正看着窗外发呆。门铃响起,一个男人推门而入...&#10;&#10;第2集 重逢&#10;..."></textarea>
+            <span class="hint">剧集标记支持:第N集 / Episode N / EP N / Scene N。检测不到标记时,整段作为单集处理。</span>
+          </label>
+          <div class="form-actions">
+            <button class="btn glass" id="parse-btn">仅解析剧集</button>
+            <button class="btn primary" id="create-btn"><span>创建任务</span></button>
+          </div>
+        </div>
+        <div id="parse-preview" class="parse-preview hidden"></div>
+      </div>
+
+      <!-- 模式 2: AI 生成 -->
+      <div class="mode-panel hidden" data-mode="ai">
+        <div class="form">
+          <label>
+            <span>标题(可选,留空则用你的想法前 20 字)</span>
+            <input id="ai-title" type="text" placeholder="例:雨夜咖啡店">
+          </label>
+          <label>
+            <span>题材</span>
+            <select id="ai-genre">
+              <option value="温情短剧">温情短剧</option>
+              <option value="悬疑推理">悬疑推理</option>
+              <option value="科幻未来">科幻未来</option>
+              <option value="都市爱情">都市爱情</option>
+              <option value="校园青春">校园青春</option>
+              <option value="古风武侠">古风武侠</option>
+              <option value="家庭伦理">家庭伦理</option>
+              <option value="职场奋斗">职场奋斗</option>
+              <option value="奇幻冒险">奇幻冒险</option>
+              <option value="黑色幽默">黑色幽默</option>
+            </select>
+          </label>
+          <label>
+            <span>视觉风格(可选)</span>
+            <input id="ai-style" type="text" placeholder="例:电影感暖色调、柔光、雨夜氛围">
+          </label>
+          <label>
+            <span>长度</span>
+            <select id="ai-length">
+              <option value="short">短 · 约 3 场戏 / 400-600 字</option>
+              <option value="medium" selected>中 · 约 5 场戏 / 800-1200 字</option>
+              <option value="long">长 · 约 8 场戏 / 1500-2000 字</option>
+            </select>
+          </label>
+          <label>
+            <span>你的想法</span>
+            <textarea id="ai-idea" rows="5" placeholder="例:雨夜,一位独自在咖啡店加班的女孩,推门进来一位五年前不告而别的初恋男友,两人重逢后解开当年的误会。"></textarea>
+            <span class="hint">越具体越好:人物、场景、核心冲突、情绪氛围。AI 会按这个写一份完整的分集剧本。</span>
+          </label>
+          <div class="form-actions">
+            <button class="btn primary" id="ai-generate-btn"><span class="ai-btn-text">✨ 生成剧本</span></button>
+          </div>
+          <div id="ai-result" class="ai-result hidden"></div>
+          <div id="ai-apply-row" class="form-actions hidden">
+            <button class="btn glass" id="ai-discard-btn">丢弃</button>
+            <button class="btn primary" id="ai-apply-btn"><span>应用到剧本并继续 →</span></button>
+          </div>
         </div>
       </div>
-      <div id="parse-preview" class="parse-preview hidden"></div>
     </div>
   </section>
 
