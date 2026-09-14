@@ -17,7 +17,8 @@
     });
     if (children) (Array.isArray(children) ? children : [children]).forEach((c) => {
       if (c == null) return;
-      e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+      if (c instanceof Node) { e.appendChild(c); }
+      else { e.appendChild(document.createTextNode(String(c))); }
     });
     return e;
   };

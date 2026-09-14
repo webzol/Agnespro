@@ -42,6 +42,7 @@ backend/server
 backend/server.exe
 backend/server.pdb
 backend/*.test
+backend/data/
 
 # Runtime data (DB, generated assets, encrypted API key) — all sensitive
 data/*
