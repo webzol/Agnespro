@@ -317,7 +317,96 @@ hr.sep { border: 0; border-top: 1px solid var(--glass-border); margin: 28px 0; }
 .kv .k { color: var(--text-mute); }
 .kv .v { color: var(--text); font-family: ui-monospace, SFMono-Regular, monospace; }
 
-/* === Jobs list === */
+
+/* === Jobs list (redesigned) === */
+.job-list { display: flex; flex-direction: column; gap: 14px; }
+.job-row {
+  display: flex; align-items: stretch; gap: 18px;
+  padding: 18px 20px; border-radius: 18px;
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  cursor: pointer; transition: all 0.25s var(--ease);
+  position: relative; overflow: hidden;
+  min-height: 96px;
+}
+.job-row::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: var(--glass-specular); opacity: 0.5; z-index: 0; }
+.job-row::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1; opacity: 0; transition: opacity 0.3s var(--ease); background: radial-gradient(320px 220px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.18), transparent 70%); }
+.job-row:hover::after { opacity: 1; }
+.job-row:hover { background: var(--glass-tint-strong); border-color: var(--glass-border-strong); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+.job-row > * { position: relative; z-index: 2; }
+
+/* Status tint accent strip on the left */
+.job-row::before { background: linear-gradient(90deg, var(--accent) 0%, transparent 6px); opacity: 0.55; }
+.job-row.is-running::before { background: linear-gradient(90deg, var(--warn) 0%, transparent 6px); opacity: 0.85; animation: statusPulse 2.4s ease-in-out infinite; }
+.job-row.is-done::before { background: linear-gradient(90deg, var(--success) 0%, transparent 6px); opacity: 0.7; }
+.job-row.is-failed, .job-row.is-cancelled { opacity: 0.78; }
+.job-row.is-failed::before { background: linear-gradient(90deg, var(--danger) 0%, transparent 6px); opacity: 0.6; }
+@keyframes statusPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* Thumbnail */
+.job-thumb {
+  width: 96px; height: 96px; border-radius: 14px; flex-shrink: 0;
+  background: rgba(0,0,0,0.25); overflow: hidden; position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.job-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.job-thumb .thumb-fallback {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  font-size: 32px; font-weight: 700;
+  background: linear-gradient(135deg, rgba(124,140,255,0.3) 0%, rgba(56,214,255,0.3) 50%, rgba(255,95,162,0.3) 100%);
+  color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.job-thumb .thumb-ring {
+  position: absolute; inset: -3px; border-radius: 16px; pointer-events: none;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, #7c8cff, #38d6ff, #ff5fa2) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: ringSpin 2.5s linear infinite;
+}
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+
+/* Center content */
+.job-center { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.job-center .title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-center .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--text-mute); }
+.job-center .meta-pill { padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-soft); }
+.job-center .meta-sep { color: var(--text-mute); opacity: 0.4; }
+.job-center .meta-time { color: var(--text-mute); }
+
+/* Progress bar (running only) */
+.job-progress { display: flex; flex-direction: column; gap: 5px; }
+.job-progress-bar { height: 6px; background: rgba(0,0,0,0.25); border-radius: 999px; overflow: hidden; }
+.job-progress-bar > div {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #7c8cff, #38d6ff, #ff5fa2);
+  background-size: 200% 100%;
+  box-shadow: 0 0 12px rgba(124,140,255,0.5);
+  animation: shimmer 2s linear infinite;
+  transition: width 0.5s var(--ease);
+}
+.job-progress-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-soft); }
+.job-progress-pct { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Right: badge or spinner */
+.job-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.status-badge { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.status-badge.pending { background: rgba(255,255,255,0.06); color: var(--text-soft); border: 1px solid var(--glass-border); }
+.status-badge.done { background: rgba(46,204,113,0.22); color: #6fdb95; }
+.status-badge.failed, .status-badge.cancelled { background: rgba(255,107,107,0.18); color: #ff9b9b; }
+.spinner { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.12); border-top-color: var(--accent-2); border-right-color: var(--accent); animation: spin 0.9s linear infinite; box-shadow: 0 0 16px rgba(124,140,255,0.5); }
+.chev { font-size: 22px; color: var(--text-mute); line-height: 1; transition: transform 0.2s var(--ease), color 0.2s var(--ease); }
+.job-row:hover .chev { transform: translateX(4px); color: var(--text-soft); }
+
+@media (max-width: 600px) {
+  .job-row { padding: 14px 16px; gap: 12px; min-height: 84px; }
+  .job-thumb { width: 72px; height: 72px; }
+  .job-center .title { font-size: 15px; }
+  .job-right .status-badge { display: none; }
+}
+
+/* === Jobs list (legacy aliases) === */
 .job-list { display: flex; flex-direction: column; gap: 12px; }
 .job-row {
   display: flex; align-items: center; gap: 16px; padding: 18px 22px;

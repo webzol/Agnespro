@@ -163,40 +163,104 @@
     }
   }
 
+  // ---------- Job row (rich) ----------
+  function jobRow(j) {
+    const status = j.status || "pending";
+    const running = status !== "done" && status !== "failed" && status !== "cancelled";
+    const row = el("div", { class: "job-row" + (running ? " is-running" : " is-" + status), onclick: () => go("detail", { id: j.id }) });
+
+    // left: thumbnail or fallback
+    const thumb = el("div", { class: "job-thumb" });
+    if (j.episodes && j.episodes.length > 0 && j.episodes[0].scenes && j.episodes[0].scenes.length > 0 && j.episodes[0].scenes[0].image_url) {
+      thumb.appendChild(el("img", { src: j.episodes[0].scenes[0].image_url, alt: j.title, loading: "lazy" }));
+    } else {
+      const iconChar = (j.title || "?")[0];
+      thumb.appendChild(el("div", { class: "thumb-fallback" }, iconChar));
+    }
+    if (running) {
+      thumb.appendChild(el("div", { class: "thumb-ring" }));
+    }
+    row.appendChild(thumb);
+
+    // center: title + meta + progress
+    const center = el("div", { class: "job-center" });
+    center.appendChild(el("div", { class: "title" }, j.title || "未命名"));
+    const meta = el("div", { class: "meta" });
+    meta.innerHTML =
+      '<span class="meta-pill">' + (j.num_episodes || 0) + ' 集</span>' +
+      '<span class="meta-sep">·</span>' +
+      '<span class="meta-pill">' + (j.num_characters || 0) + ' 角色</span>' +
+      '<span class="meta-sep">·</span>' +
+      '<span class="meta-pill">' + (j.num_videos || 0) + ' 视频</span>' +
+      '<span class="meta-sep">·</span>' +
+      '<span class="meta-time">' + formatDate(j.created_at) + '</span>';
+    center.appendChild(meta);
+    if (running) {
+      const prog = el("div", { class: "job-progress" });
+      const bar = el("div", { class: "job-progress-bar" });
+      bar.appendChild(el("div", { style: "width:" + (j.progress || 0) + "%" }));
+      prog.appendChild(bar);
+      const pMeta = el("div", { class: "job-progress-meta" });
+      pMeta.appendChild(el("span", { class: "job-progress-label" }, statusLabel(status)));
+      pMeta.appendChild(el("span", { class: "job-progress-pct" }, (j.progress || 0) + "%"));
+      prog.appendChild(pMeta);
+      center.appendChild(prog);
+    }
+    row.appendChild(center);
+
+    // right: status badge or spinner + chevron
+    const right = el("div", { class: "job-right" });
+    if (!running) {
+      right.appendChild(el("div", { class: "status-badge " + status }, statusLabel(status)));
+    } else {
+      right.appendChild(el("div", { class: "spinner" }));
+    }
+    right.appendChild(el("div", { class: "chev" }, "›"));
+    row.appendChild(right);
+
+    return row;
+  }
+
+
   // ---------- Jobs list ----------
   async function loadJobs() {
     const list = $("#job-list");
-    list.innerHTML = "<div class=\"empty\"><div class=\"ico\">...</div><div>Loading</div></div>";
+    if (!list.children.length || list.querySelector(".empty")) {
+      list.innerHTML = "<div class=\"empty\"><div class=\"ico\">...</div><div>加载中</div></div>";
+    }
     try {
       const r = await api.get("/api/jobs");
       let jobs = r.jobs || [];
       const q = state.search.trim().toLowerCase();
       if (q) jobs = jobs.filter((j) => (j.title || "").toLowerCase().indexOf(q) >= 0);
       if (jobs.length === 0) {
-        list.innerHTML = "<div class=\"empty\"><div class=\"ico\">🎬</div><div>No jobs match. Try a new one.</div></div>";
+        list.innerHTML = "<div class=\"empty\"><div class=\"ico\">🎬</div><div>没有匹配的任务,试试新建一个吧。</div></div>";
+        stopJobsListPolling();
         return;
       }
       list.innerHTML = "";
       jobs.forEach((j) => list.appendChild(jobRow(j)));
+      const hasRunning = jobs.some((j) => {
+        const s = j.status || "pending";
+        return s !== "done" && s !== "failed" && s !== "cancelled";
+      });
+      if (hasRunning) startJobsListPolling(); else stopJobsListPolling();
     } catch (e) {
-      list.innerHTML = "<div class=\"empty\">" + escapeHTML(e.message) + "</div>";
+      list.innerHTML = "<div class=\"empty\">" + e.message + "</div>";
     }
   }
 
-  function statusLabel(s) { return ({pending:"待处理",planning:"规划中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",cancelled:"已取消"})[s] || s; } function episodeStateLabel(s) { return ({pending:"待处理",running:"进行中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",skipped:"已跳过"})[s] || s; } function jobRow(j) {
-    const row = el("div", { class: "job-row", onclick: () => go("detail", { id: j.id }) });
-    row.appendChild(el("div", { class: "grow" }, [
-      el("div", { class: "title" }, j.title || "未命名"),
-      el("div", { class: "meta" }, [
-        "" + (j.num_episodes || 0) + " episodes · " + (j.num_characters || 0) + " characters · " + (j.num_videos || 0) + " videos · " + formatDate(j.created_at),
-      ]),
-    ]));
-    const status = el("div", { class: "status " + (j.status || "pending") }, j.status || "pending");
-    row.appendChild(status);
-    return row;
+  function startJobsListPolling() {
+    if (state.jobsListPoll) return;
+    state.jobsListPoll = setInterval(() => {
+      if (state.view === "jobs") loadJobs();
+    }, 3000);
+  }
+  function stopJobsListPolling() {
+    if (state.jobsListPoll) { clearInterval(state.jobsListPoll); state.jobsListPoll = null; }
   }
 
-  $("#job-search").addEventListener("input", (e) => {
+    $("#job-search").addEventListener("input", (e) => {
     state.search = e.target.value;
     loadJobs();
   });
@@ -616,6 +680,14 @@
 
   // ---------- Utilities ----------
   function escapeHTML(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  // ---------- Status label helpers ----------
+  function statusLabel(s) {
+    return ({pending:"待处理",planning:"规划中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",cancelled:"已取消"})[s] || s;
+  }
+  function episodeStateLabel(s) {
+    return ({pending:"待处理",running:"进行中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",skipped:"已跳过"})[s] || s;
+  }
+
   function truncate(s, n) { s = s || ""; if (s.length <= n) return s; return s.substring(0, n) + "..."; }
   function formatDate(s) { if (!s) return "—"; const d = new Date(s); if (isNaN(d.getTime())) return s; return d.toLocaleString(); }
   function iconPlay() {
