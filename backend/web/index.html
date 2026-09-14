@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agnes AI Studio</title>
+<meta name="description" content="Script-to-video studio powered by Agnes AI. Generate short videos and series with one click.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><text x='32' y='42' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,sans-serif' font-size='28' fill='white' font-weight='700'>A</text></svg>">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="theme-dark">
+<div class="aurora">
+  <div class="aurora-blob a1"></div>
+  <div class="aurora-blob a2"></div>
+  <div class="aurora-blob a3"></div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">A</div>
+    <div>
+      <div class="brand-name">Agnes AI Studio</div>
+      <div class="brand-sub">Script to video, the easy way</div>
+    </div>
+  </div>
+  <nav class="tabs glass" id="nav">
+    <button data-view="home" class="tab active">Home</button>
+    <button data-view="new" class="tab">New Job</button>
+    <button data-view="jobs" class="tab">Jobs</button>
+    <button data-view="settings" class="tab">Settings</button>
+    <button data-view="docs" class="tab">Docs</button>
+  </nav>
+  <div class="topbar-right">
+    <div id="queue-pill" class="pill glass hidden">
+      <span class="dot"></span><span id="queue-text">Queue</span>
+    </div>
+    <button id="theme-toggle" class="icon-btn glass" title="Toggle theme">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="app">
+  <!-- Home view -->
+  <section class="view active" data-view="home">
+    <div class="hero glass">
+      <div class="hero-content">
+        <h1>从一段脚本到一段视频<br><span class="grad">就这几步。</span></h1>
+        <p class="hero-sub">粘贴剧本,系统会先拆出剧集,识别角色与道具,为每一集生成场景图,最后合成短剧。无需切换工具,排队等待即可。</p>
+        <div class="hero-actions">
+          <button class="btn primary" data-goto="new"><span>开始新创作</span></button>
+          <button class="btn glass" data-goto="jobs">查看我的作品</button>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-pill"><span>文本</span><b>agnes-2.5-flash</b></div>
+          <div class="meta-pill"><span>图像</span><b>agnes-image-2.1-flash</b></div>
+          <div class="meta-pill"><span>视频</span><b>agnes-video-v2.0</b></div>
+        </div>
+      </div>
+      <div class="hero-deco">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card glass">
+        <div class="card-ico">1</div>
+        <h3>粘贴剧本</h3>
+        <p>支持中文 / 英文。可用 <code>第N集</code>、<code>Episode N</code>、<code>EP N</code> 标记剧集,系统会自动拆分。</p>
+      </div>
+      <div class="card glass">
+        <div class="card-ico">2</div>
+        <h3>自动资产</h3>
+        <p>提取主角、配角、关键道具与场景;为每场戏生成首帧图。</p>
+      </div>
+      <div class="card glass">
+        <div class="card-ico">3</div>
+        <h3>逐集生成</h3>
+        <p>单次生成全部剧集,或指定只生成某一集;支持取消、排队、断点续传。</p>
+      </div>
+    </div>
+
+    <div class="card glass" id="recent-jobs-card">
+      <div class="card-head">
+        <h3>最近任务</h3>
+        <button class="link" data-goto="jobs">查看全部 →</button>
+      </div>
+      <div id="recent-jobs" class="recent-jobs"></div>
+    </div>
+  </section>
+
+  <!-- New job view -->
+  <section class="view" data-view="new">
+    <div class="card glass">
+      <h2>新任务</h2>
+      <p class="muted">输入剧本标题、风格提示,粘贴剧本正文。提交后可在 Jobs 页面发起生成。</p>
+      <div class="form">
+        <label>
+          <span>标题</span>
+          <input id="job-title" type="text" placeholder="例:咖啡店的奇妙夜晚">
+        </label>
+        <label>
+          <span>视觉风格(可选)</span>
+          <input id="job-style" type="text" placeholder="例:日式动画、电影感夜景、柔光暖色调">
+        </label>
+        <label>
+          <span>剧本正文</span>
+          <textarea id="job-script" rows="14" placeholder="第1集 雨夜&#10;咖啡店里,林夏正看着窗外发呆。门铃响起,一个男人推门而入...&#10;&#10;第2集 重逢&#10;..."></textarea>
+          <span class="hint">剧集标记支持:第N集 / Episode N / EP N / Scene N。检测不到标记时,整段作为单集处理。</span>
+        </label>
+        <div class="form-actions">
+          <button class="btn glass" id="parse-btn">仅解析剧集</button>
+          <button class="btn primary" id="create-btn"><span>创建任务</span></button>
+        </div>
+      </div>
+      <div id="parse-preview" class="parse-preview hidden"></div>
+    </div>
+  </section>
+
+  <!-- Jobs list view -->
+  <section class="view" data-view="jobs">
+    <div class="card glass">
+      <div class="card-head">
+        <h2>所有任务</h2>
+        <div class="row">
+          <input id="job-search" type="search" placeholder="搜索标题..." class="search">
+          <button class="btn primary" data-goto="new">+ 新建</button>
+        </div>
+      </div>
+      <div id="job-list" class="job-list"></div>
+    </div>
+  </section>
+
+  <!-- Job detail view -->
+  <section class="view" data-view="detail">
+    <div id="job-detail" class="job-detail"></div>
+  </section>
+
+  <!-- Settings view -->
+  <section class="view" data-view="settings">
+    <div class="card glass">
+      <h2>设置</h2>
+      <p class="muted">Agnes AI 官方 API Key 仅保存在本机,使用 AES-256-GCM 加密后存储在 <code>data/.apikey</code>。请勿在公网环境暴露该目录。</p>
+      <div class="form">
+        <label>
+          <span>API Key</span>
+          <div class="row">
+            <input id="api-key" type="password" placeholder="sk-..." autocomplete="off">
+            <button class="btn glass" id="toggle-key">显示</button>
+          </div>
+          <span class="hint" id="key-status">未设置</span>
+        </label>
+        <div class="form-actions">
+          <button class="btn glass" id="test-key">测试连接</button>
+          <button class="btn primary" id="save-key"><span>保存</span></button>
+          <button class="btn ghost" id="clear-key">清除</button>
+        </div>
+        <div id="test-result" class="test-result hidden"></div>
+      </div>
+
+      <hr class="sep">
+
+      <div class="form">
+        <h3>服务路由</h3>
+        <p class="muted">不同区域对应不同服务地址,选择错误可能导致 401/403。修改后需要重启服务以生效。</p>
+        <div class="route-grid">
+          <label class="route-card glass">
+            <input type="radio" name="route" value="international">
+            <div>
+              <b>国际 (主)</b>
+              <code>apihub.agnes-ai.com</code>
+            </div>
+          </label>
+          <label class="route-card glass">
+            <input type="radio" name="route" value="international-alt">
+            <div>
+              <b>国际 (备)</b>
+              <code>apihub.agnes-ai.cn</code>
+            </div>
+          </label>
+          <label class="route-card glass">
+            <input type="radio" name="route" value="china">
+            <div>
+              <b>中国大陆</b>
+              <code>api.agnes-ai.cn</code>
+            </div>
+          </label>
+        </div>
+        <button class="btn glass" id="save-route">保存路由</button>
+        <div id="route-result" class="test-result hidden"></div>
+      </div>
+
+      <hr class="sep">
+
+      <div class="form">
+        <h3>运行信息</h3>
+        <div id="runtime-info" class="kv"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs view -->
+  <section class="view" data-view="docs">
+    <div class="card glass">
+      <h2>使用文档</h2>
+      <p class="muted">详细的官方使用说明,内置于本应用。也可以访问仓库根目录的 <code>docs/USER_GUIDE.md</code>。</p>
+      <div id="docs-content" class="docs"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card glass" id="modal-card"></div>
+</div>
+
+<script src="/assets/markdown.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>
