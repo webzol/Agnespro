@@ -32,6 +32,48 @@
     detailCache: {},
   };
 
+
+  // ---------- Showcase (curated posters) ----------
+  const SHOWCASE = {
+    drama: [
+      { img: "drama1.jpg", title: "都市夜话", tag: "都市情感", sub: "霓虹与咖啡香" },
+      { img: "drama2.jpg", title: "迷雾追凶", tag: "悬疑推理", sub: "雨夜,真相" },
+      { img: "drama3.jpg", title: "女王主场", tag: "职场逆袭", sub: "玻璃天花板的破局者" },
+      { img: "drama4.jpg", title: "剑问江湖", tag: "古风短剧", sub: "一袭青衫,半卷诗书" },
+      { img: "drama5.jpg", title: "樱花树下", tag: "校园纯爱", sub: "那年夏天的风" },
+      { img: "drama6.jpg", title: "豪门暗流", tag: "家族风云", sub: "水晶灯下的博弈" },
+    ],
+    myth: [
+      { img: "myth1.jpg", title: "哪吒·重生", tag: "封神", sub: "我命由我不由天" },
+      { img: "myth2.jpg", title: "齐天大圣", tag: "西游", sub: "金箍棒碎,凌霄殿惊" },
+      { img: "myth3.jpg", title: "嫦娥奔月", tag: "月宫", sub: "广寒宫里千年霜" },
+      { img: "myth4.jpg", title: "封神榜", tag: "史诗", sub: "天命所归,神魔共舞" },
+      { img: "myth5.jpg", title: "山海奇兽", tag: "志怪", sub: "上古神兽,云海之间" },
+    ],
+    film: [
+      { img: "film1.jpg", title: "深空", tag: "太空歌剧", sub: "人类最后的远征" },
+      { img: "film2.jpg", title: "西部往事", tag: "西部", sub: "黄沙里的孤影" },
+      { img: "film3.jpg", title: "霓虹罪案", tag: "黑色电影", sub: "雨夜,红与黑" },
+      { img: "film4.jpg", title: "废土狂飙", tag: "末日", sub: "引擎声是唯一的希望" },
+      { img: "film5.jpg", title: "黎明", tag: "战争史诗", sub: "硝烟中的黎明" },
+    ],
+  };
+
+  function renderShowcase() {
+    Object.keys(SHOWCASE).forEach(function (cat) {
+      var root = document.getElementById("showcase-" + cat);
+      if (!root) return;
+      root.innerHTML = "";
+      SHOWCASE[cat].forEach(function (p) {
+        var card = document.createElement("div");
+        card.className = "poster";
+        card.innerHTML = '<div class="shine"></div><img src="/assets/img/showcase/' + p.img + '" alt="' + p.title + '" loading="lazy"><div class="poster-info"><span class="tag">' + p.tag + '</span><div class="title">' + p.title + '</div><div class="sub">' + p.sub + '</div></div>';
+        root.appendChild(card);
+      });
+    });
+  }
+
+
   // ---------- API ----------
   const api = {
     base: "",
@@ -104,6 +146,7 @@
 
   // ---------- Home ----------
   async function loadHome() {
+    renderShowcase();
     const card = $("#recent-jobs");
     card.innerHTML = "<div class=\"empty\"><div class=\"ico\">...</div><div>Loading</div></div>";
     try {
@@ -140,10 +183,10 @@
     }
   }
 
-  function jobRow(j) {
+  function statusLabel(s) { return ({pending:"待处理",planning:"规划中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",cancelled:"已取消"})[s] || s; } function episodeStateLabel(s) { return ({pending:"待处理",running:"进行中",characters:"生成角色",props:"生成道具",scenes:"生成场景",video:"生成视频",done:"已完成",failed:"失败",skipped:"已跳过"})[s] || s; } function jobRow(j) {
     const row = el("div", { class: "job-row", onclick: () => go("detail", { id: j.id }) });
     row.appendChild(el("div", { class: "grow" }, [
-      el("div", { class: "title" }, j.title || "Untitled"),
+      el("div", { class: "title" }, j.title || "未命名"),
       el("div", { class: "meta" }, [
         "" + (j.num_episodes || 0) + " episodes · " + (j.num_characters || 0) + " characters · " + (j.num_videos || 0) + " videos · " + formatDate(j.created_at),
       ]),
@@ -252,7 +295,7 @@
     p.innerHTML = "<h3>Detected " + eps.length + " episode" + (eps.length === 1 ? "" : "s") + "</h3>";
     eps.forEach((ep) => {
       const e = el("div", { class: "ep" });
-      e.appendChild(el("b", null, "Episode " + ep.index));
+      e.appendChild(el("b", null, "第 " + ep.index + " 集"));
       e.appendChild(document.createTextNode(ep.title || ""));
       e.appendChild(el("div", { class: "body" }, ep.body || "(empty)"));
       p.appendChild(e);
@@ -266,7 +309,7 @@
     if (!script) { toast("Script is required", "err"); return; }
     try {
       const r = await api.post("/api/jobs", { title: title || "Untitled", script, style });
-      toast("Job created", "ok");
+      toast("任务已创建", "ok");
       $("#job-title").value = "";
       $("#job-script").value = "";
       $("#job-style").value = "";
@@ -314,19 +357,19 @@
     const head = el("div", { class: "card glass" });
     const headRow = el("div", { class: "detail-head" }, [
       el("div", null, [
-        el("h2", null, j.title || "Untitled"),
-        el("div", { class: "muted" }, "Job " + j.id + " · created " + formatDate(j.created_at)),
+        el("h2", null, j.title || "未命名"),
+        el("div", { class: "muted" }, "任务 " + j.id + " · 创建于 " + formatDate(j.created_at)),
       ]),
     ]);
     const actions = el("div", { class: "detail-actions" });
     if (j.status === "pending" || j.status === "failed" || j.status === "cancelled") {
-      actions.appendChild(el("button", { class: "btn primary", onclick: () => runJob(j.id) }, [iconPlay(), "Run all"]));
+      actions.appendChild(el("button", { class: "btn primary", onclick: () => runJob(j.id) }, [iconPlay(), "运行全部"]));
     }
     if (j.status === "pending") {
-      actions.appendChild(el("button", { class: "btn glass", onclick: () => deleteJob(j.id) }, "Delete"));
+      actions.appendChild(el("button", { class: "btn glass", onclick: () => deleteJob(j.id) }, "删除"));
     }
     if (j.status !== "done" && j.status !== "pending" && j.status !== "cancelled") {
-      actions.appendChild(el("button", { class: "btn glass", onclick: () => cancelJob(j.id) }, "Cancel"));
+      actions.appendChild(el("button", { class: "btn glass", onclick: () => cancelJob(j.id) }, "取消"));
     }
     headRow.appendChild(actions);
     head.appendChild(headRow);
@@ -335,10 +378,10 @@
     const wrap = el("div", { class: "progress-wrap" });
     wrap.appendChild(el("div", { class: "progress-bar" }, [el("div", { style: "width:" + (j.progress || 0) + "%" })]));
     const meta = el("div", { class: "progress-meta" });
-    meta.appendChild(el("span", null, "Status: " + (j.status || "pending")));
+    meta.appendChild(el("span", null, "状态:" + statusLabel(j.status || "pending")));
     meta.appendChild(el("span", null, (j.progress || 0) + "%"));
     wrap.appendChild(meta);
-    if (j.error) wrap.appendChild(el("div", { class: "test-result err", style: "margin-top:12px" }, "Error: " + j.error));
+    if (j.error) wrap.appendChild(el("div", { class: "test-result err", style: "margin-top:12px" }, "错误:" + j.error));
     head.appendChild(wrap);
     root.appendChild(head);
 
@@ -364,7 +407,7 @@
       j.episodes.forEach((ep) => sec.appendChild(episodeCard(j, ep)));
       root.appendChild(sec);
     } else {
-      root.appendChild(el("div", { class: "card glass" }, [el("div", { class: "empty" }, "No episodes detected. Add markers like 第1集 or Episode 1 to your script, then re-create the job.")]));
+      root.appendChild(el("div", { class: "card glass" }, [el("div", { class: "empty" }, "未识别到剧集标记。请在剧本中加入「第1集」或「Episode 1」等标记,然后重新创建任务。")]));
     }
   }
 
@@ -372,7 +415,7 @@
     const card = el("div", { class: "char-card glass" });
     const img = el("div", { class: "img" });
     if (c.image_url) img.appendChild(el("img", { src: c.image_url, alt: c.name, loading: "lazy" }));
-    else img.appendChild(el("div", { class: "pending" }, "No image yet"));
+    else img.appendChild(el("div", { class: "pending" }, "暂无图片"));
     card.appendChild(img);
     card.appendChild(el("div", { class: "name" }, c.name));
     card.appendChild(el("div", { class: "role" }, c.role || "character"));
@@ -383,7 +426,7 @@
     const card = el("div", { class: "char-card glass" });
     const img = el("div", { class: "img" });
     if (p.image_url) img.appendChild(el("img", { src: p.image_url, alt: p.name, loading: "lazy" }));
-    else img.appendChild(el("div", { class: "pending" }, "No image yet"));
+    else img.appendChild(el("div", { class: "pending" }, "暂无图片"));
     card.appendChild(img);
     card.appendChild(el("div", { class: "name" }, p.name));
     card.appendChild(el("div", { class: "role" }, p.kind || "prop"));
@@ -394,7 +437,7 @@
   function episodeCard(j, ep) {
     const card = el("div", { class: "episode glass" });
     const head = el("h4", null, [
-      "Episode " + ep.index + ": " + (ep.title || ""),
+      "第 " + ep.index + " 集" + ": " + (ep.title || ""),
       el("span", { class: "ep-state " + (ep.state || "pending") }, ep.state || "pending"),
     ]);
     card.appendChild(head);
@@ -412,7 +455,7 @@
       ep.scenes.forEach((s) => {
         const sc = el("div", { class: "scene" });
         if (s.image_url) sc.appendChild(el("img", { src: s.image_url, alt: s.heading, loading: "lazy" }));
-        else sc.appendChild(el("div", { class: "pending" }, "Scene " + s.index));
+        else sc.appendChild(el("div", { class: "pending" }, "场景 " + s.index));
         if (s.heading) sc.appendChild(el("div", { class: "heading" }, s.heading));
         sl.appendChild(sc);
       });
@@ -427,18 +470,18 @@
     // actions
     const acts = el("div", { class: "ep-actions" });
     if (j.status === "pending" || j.status === "failed" || j.status === "done" || j.status === "cancelled") {
-      acts.appendChild(el("button", { class: "btn glass", onclick: () => runEpisode(j.id, ep.index) }, [iconPlay(), "Generate this episode"]));
+      acts.appendChild(el("button", { class: "btn glass", onclick: () => runEpisode(j.id, ep.index) }, [iconPlay(), "只生成这一集"]));
     }
     card.appendChild(acts);
     return card;
   }
 
-  function runJob(id) { api.post("/api/jobs/" + id + "/run").then(() => { toast("Queued", "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
-  function runEpisode(id, n) { api.post("/api/jobs/" + id + "/episodes/" + n + "/run").then(() => { toast("Queued episode " + n, "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
-  function cancelJob(id) { api.post("/api/jobs/" + id + "/cancel").then(() => { toast("Cancellation requested", "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
+  function runJob(id) { api.post("/api/jobs/" + id + "/run").then(() => { toast("已加入队列", "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
+  function runEpisode(id, n) { api.post("/api/jobs/" + id + "/episodes/" + n + "/run").then(() => { toast("已加入队列(第 " + n + " 集)", "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
+  function cancelJob(id) { api.post("/api/jobs/" + id + "/cancel").then(() => { toast("已请求取消", "ok"); loadJobDetail(id); }).catch((e) => toast(e.message, "err")); }
   function deleteJob(id) {
     showModal("<h3>Delete this job?</h3><p class=\"muted\">This removes the job and all its generated assets. This cannot be undone.</p><div class=\"actions\"><button class=\"btn ghost\" onclick=\"hideModal()\">Cancel</button><button class=\"btn primary\" id=\"confirm-del\">Delete</button></div>");
-    $("#confirm-del").addEventListener("click", () => { api.del("/api/jobs/" + id).then(() => { hideModal(); toast("Deleted", "ok"); go("jobs"); }).catch((e) => toast(e.message, "err")); });
+    $("#confirm-del").addEventListener("click", () => { api.del("/api/jobs/" + id).then(() => { hideModal(); toast("已删除", "ok"); go("jobs"); }).catch((e) => toast(e.message, "err")); });
   }
 
   // ---------- Settings ----------
@@ -451,12 +494,12 @@
       if (r) r.checked = true;
       const kv = $("#runtime-info");
       kv.innerHTML = "";
-      appendKV(kv, "Base URL", s.base_url || "—");
-      appendKV(kv, "Route", s.api_route || "—");
-      appendKV(kv, "API key", s.api_key_set ? "Set (encrypted at rest)" : "Not set");
-      appendKV(kv, "Concurrency", s.concurrency || 1);
-      appendKV(kv, "Poll interval", (s.poll_interval_s || 5) + "s");
-      appendKV(kv, "Server", "agnesai-studio 1.0.0");
+      appendKV(kv, "API 地址", s.base_url || "—");
+      appendKV(kv, "服务路由", s.api_route || "—");
+      appendKV(kv, "API Key", s.api_key_set ? "已设置(加密存储)" : "未设置");
+      appendKV(kv, "并发数", s.concurrency || 1);
+      appendKV(kv, "轮询间隔", (s.poll_interval_s || 5) + " 秒");
+      appendKV(kv, "服务版本", "Agnes AI Studio 1.0.0");
     } catch (e) { toast(e.message, "err"); }
   }
   function appendKV(parent, k, v) {
@@ -470,7 +513,7 @@
     try {
       await api.post("/api/settings/key", { api_key: k });
       $("#api-key").value = "";
-      toast("Saved", "ok");
+      toast("已保存", "ok");
       loadSettings();
     } catch (e) { toast(e.message, "err"); }
   });
@@ -478,16 +521,16 @@
     const k = $("#api-key").value.trim();
     const tr = $("#test-result");
     tr.className = "test-result"; tr.classList.remove("hidden");
-    tr.textContent = "Testing...";
+    tr.textContent = "正在测试...";
     try {
       const r = await api.post("/api/settings/key/test", { api_key: k });
-      if (r.ok) { tr.className = "test-result ok"; tr.textContent = "Connected (" + r.duration + "ms) via " + r.base_url; }
-      else { tr.className = "test-result err"; tr.textContent = "Failed: " + (r.message || "unknown error"); }
+      if (r.ok) { tr.className = "test-result ok"; tr.textContent = "连接成功 (" + r.duration + "ms),已通过 " + r.base_url; }
+      else { tr.className = "test-result err"; tr.textContent = "失败:" + (r.message || "未知错误"); }
     } catch (e) { tr.className = "test-result err"; tr.textContent = e.message; }
   });
   $("#clear-key").addEventListener("click", async () => {
     if (!confirm("Clear the stored API key?")) return;
-    try { await api.del("/api/settings/key"); toast("Cleared", "ok"); loadSettings(); }
+    try { await api.del("/api/settings/key"); toast("已清除", "ok"); loadSettings(); }
     catch (e) { toast(e.message, "err"); }
   });
   $("#toggle-key").addEventListener("click", () => {
@@ -500,11 +543,11 @@
     if (!r) return;
     const res = $("#route-result");
     res.className = "test-result"; res.classList.remove("hidden");
-    res.textContent = "Saving...";
+    res.textContent = "正在保存...";
     try {
       const x = await api.post("/api/settings/route", { route: r.value });
       res.className = "test-result ok";
-      res.textContent = "Saved. Restart the server to apply the new route.";
+      res.textContent = "已保存。重启服务后生效。";
       loadSettings();
     } catch (e) { res.className = "test-result err"; res.textContent = e.message; }
   });
@@ -594,3 +637,5 @@
     go("home");
   });
 })();
+
+
