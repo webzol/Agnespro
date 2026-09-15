@@ -268,6 +268,224 @@
     });
   }
 
+  // ---------- Admin view (后台配置) ----------
+  let ADMIN_CONFIG = null;
+
+  async function loadAdminConfig() {
+    try {
+      const r = await api.get("/admin/api/config");
+      ADMIN_CONFIG = r;
+      return r;
+    } catch (e) {
+      toast("加载后台配置失败: " + e.message, "err");
+      return null;
+    }
+  }
+
+  function renderAdminView() {
+    if (!ADMIN_CONFIG) return;
+    const c = ADMIN_CONFIG;
+
+    // 1. Key 状态
+    const keyStatus = document.getElementById("admin-key-status");
+    if (keyStatus) {
+      keyStatus.classList.remove("checking", "set", "unset");
+      if (c.api_key_set) {
+        keyStatus.classList.add("set");
+        keyStatus.textContent = "✓ 已设置（加密存储）";
+      } else {
+        keyStatus.classList.add("unset");
+        keyStatus.textContent = "✗ 未设置";
+      }
+    }
+
+    // 2. Route
+    document.querySelectorAll('input[name="admin-route"]').forEach(function (r) {
+      r.checked = (r.value === c.api_route);
+    });
+
+    // 3. 默认模型 (下拉)
+    fillAdminModelSelect("admin-script-model", "chat", c.script_model);
+    fillAdminModelSelect("admin-image-model",  "image", c.image_model);
+    fillAdminModelSelect("admin-video-model",  "video", c.video_model);
+
+    // 4. 可用模型列表
+    renderAdminModelsList(c.available_models || [], c.models_error);
+
+    // fetched_at
+    const fa = document.getElementById("admin-fetched-at");
+    if (fa) fa.textContent = "已加载 · " + new Date(c.fetched_at).toLocaleTimeString();
+  }
+
+  function fillAdminModelSelect(selId, typeFilter, currentValue) {
+    const sel = document.getElementById(selId);
+    if (!sel || !ADMIN_CONFIG) return;
+    const list = (ADMIN_CONFIG.available_models || []).filter(function (m) { return m.type === typeFilter; });
+    sel.innerHTML = "";
+    if (list.length === 0) {
+      const o = document.createElement("option");
+      o.value = currentValue || "";
+      o.textContent = currentValue || "未获取到模型列表";
+      sel.appendChild(o);
+      return;
+    }
+    list.forEach(function (m) {
+      const o = document.createElement("option");
+      o.value = m.id;
+      o.textContent = m.id;
+      sel.appendChild(o);
+    });
+    if (currentValue && list.find(function (m) { return m.id === currentValue; })) {
+      sel.value = currentValue;
+    } else if (!sel.value) {
+      sel.value = list[0].id;
+    }
+  }
+
+  function renderAdminModelsList(models, errMsg) {
+    const wrap = document.getElementById("admin-models-list");
+    if (!wrap) return;
+    if (errMsg) {
+      wrap.innerHTML = '<div class="muted small">⚠ 拉取模型失败: ' + errMsg + '</div>';
+      return;
+    }
+    if (!models || models.length === 0) {
+      wrap.innerHTML = '<div class="muted small">未拉取到模型列表（请确认已设置 API Key 并刷新）</div>';
+      return;
+    }
+    const groups = { chat: [], image: [], video: [] };
+    models.forEach(function (m) { (groups[m.type] = groups[m.type] || []).push(m); });
+    const html = ["chat", "image", "video"].map(function (type) {
+      const items = groups[type] || [];
+      if (items.length === 0) return "";
+      const label = type === "chat" ? "AI 剧本 (chat)" : type === "image" ? "AI 绘图 (image)" : "AI 视频 (video)";
+      const itemsHtml = items.map(function (m) {
+        return '<span class="model-chip" data-id="' + m.id + '" data-type="' + m.type + '">' +
+               '<span class="model-chip-id">' + m.id + '</span>' +
+               (m.owned_by ? '<span class="model-chip-owner">' + m.owned_by + '</span>' : '') +
+               '</span>';
+      }).join("");
+      return '<div class="model-group"><div class="model-group-label">' + label + ' · ' + items.length + ' 个</div>' +
+             '<div class="model-group-items">' + itemsHtml + '</div></div>';
+    }).join("");
+    wrap.innerHTML = html || '<div class="muted small">未拉取到模型列表</div>';
+    // click to fill the matching select
+    wrap.querySelectorAll(".model-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        const id = chip.dataset.id;
+        const type = chip.dataset.type;
+        const selId = type === "chat" ? "admin-script-model" : type === "image" ? "admin-image-model" : "admin-video-model";
+        const sel = document.getElementById(selId);
+        if (sel) {
+          sel.value = id;
+          sel.classList.add("flash");
+          setTimeout(function () { sel.classList.remove("flash"); }, 800);
+        }
+      });
+    });
+  }
+
+  async function adminSaveKey() {
+    const v = (document.getElementById("admin-api-key").value || "").trim();
+    if (!v) { toast("请先输入 API Key", "err"); return; }
+    if (!v.startsWith("sk-")) { toast("Key 格式应以 sk- 开头", "err"); return; }
+    try {
+      await api.post("/admin/api/config", { api_key: v });
+      document.getElementById("admin-api-key").value = "";
+      toast("Key 已保存（加密）", "ok");
+      await loadAdminConfig();
+      renderAdminView();
+    } catch (e) { toast(e.message, "err"); }
+  }
+
+  async function adminClearKey() {
+    if (!confirm("确定要清除已保存的 API Key 吗？")) return;
+    try {
+      await api.post("/admin/api/config", { clear_api_key: true });
+      toast("Key 已清除", "ok");
+      await loadAdminConfig();
+      renderAdminView();
+    } catch (e) { toast(e.message, "err"); }
+  }
+
+  async function adminTestKey() {
+    const v = (document.getElementById("admin-api-key").value || "").trim();
+    const result = document.getElementById("admin-key-result");
+    result.className = "test-result loading";
+    result.textContent = "测试中…";
+    result.classList.remove("hidden");
+    try {
+      const body = v ? { api_key: v } : {};
+      const r = await api.post("/admin/api/config/test-key", body);
+      if (r.ok) {
+        result.className = "test-result ok";
+        result.textContent = "✓ " + r.message + " (" + r.duration_ms + "ms) · " + r.base_url;
+      } else {
+        result.className = "test-result err";
+        result.textContent = "✗ " + r.message;
+      }
+    } catch (e) {
+      result.className = "test-result err";
+      result.textContent = "✗ " + e.message;
+    }
+  }
+
+  async function adminSaveRoute() {
+    const checked = document.querySelector('input[name="admin-route"]:checked');
+    if (!checked) { toast("请选择一个路由", "err"); return; }
+    const newRoute = checked.value;
+    try {
+      const r = await api.post("/admin/api/config", { route: newRoute });
+      toast(r.restart_required ? "路由已保存,需重启服务生效" : "路由已保存", "ok");
+      await loadAdminConfig();
+      renderAdminView();
+    } catch (e) { toast(e.message, "err"); }
+  }
+
+  async function adminSaveModels() {
+    const sm = document.getElementById("admin-script-model").value;
+    const im = document.getElementById("admin-image-model").value;
+    const vm = document.getElementById("admin-video-model").value;
+    try {
+      await api.post("/admin/api/config", { script_model: sm, image_model: im, video_model: vm });
+      toast("默认模型已保存", "ok");
+      await loadAdminConfig();
+      renderAdminView();
+    } catch (e) { toast(e.message, "err"); }
+  }
+
+  async function adminReload() {
+    await loadAdminConfig();
+    renderAdminView();
+    toast("已重新加载", "ok");
+  }
+
+  function bindAdminView() {
+    const saveKeyBtn = document.getElementById("admin-save-key");
+    if (saveKeyBtn) saveKeyBtn.addEventListener("click", adminSaveKey);
+    const clearKeyBtn = document.getElementById("admin-clear-key");
+    if (clearKeyBtn) clearKeyBtn.addEventListener("click", adminClearKey);
+    const testKeyBtn = document.getElementById("admin-test-key");
+    if (testKeyBtn) testKeyBtn.addEventListener("click", adminTestKey);
+    const toggleBtn = document.getElementById("admin-toggle-key");
+    if (toggleBtn) toggleBtn.addEventListener("click", function () {
+      const input = document.getElementById("admin-api-key");
+      if (input.type === "password") { input.type = "text"; toggleBtn.textContent = "隐藏"; }
+      else { input.type = "password"; toggleBtn.textContent = "显示"; }
+    });
+    const refreshBtn = document.getElementById("admin-refresh-models");
+    if (refreshBtn) refreshBtn.addEventListener("click", adminReload);
+    const saveModelsBtn = document.getElementById("admin-save-models");
+    if (saveModelsBtn) saveModelsBtn.addEventListener("click", adminSaveModels);
+    const reloadBtn = document.getElementById("admin-reload");
+    if (reloadBtn) reloadBtn.addEventListener("click", adminReload);
+    // route change -> save automatically
+    document.querySelectorAll('input[name="admin-route"]').forEach(function (r) {
+      r.addEventListener("change", adminSaveRoute);
+    });
+  }
+
+
   function initStyleLibraryModal() {
     const closeBtn = document.getElementById("style-library-close");
     if (closeBtn) closeBtn.addEventListener("click", closeStyleLibraryModal);
@@ -409,7 +627,9 @@
     $$(".view").forEach((v) => v.classList.toggle("active", v.dataset.view === view));
     $$("#nav .tab").forEach((t) => t.classList.toggle("active", t.dataset.view === view));
     if (view === "home") loadHome();
-    if (view === "new") { $("#job-script").focus(); initStylePickers(); }
+    if (view === "new") { $("#job-script").focus(); initStylePickers(); } else if (view === "admin") {
+      loadAdminConfig().then(renderAdminView);
+    }
     if (view === "jobs") loadJobs();
     if (view === "detail") { loadSubtitleStyles().catch(function(){}); loadJobDetail(state.currentJobId); }
     if (view === "settings") loadSettings();
@@ -1086,6 +1306,7 @@
     // start at home
     initStylePickers().catch(() => {});
     initStyleLibraryModal();
+    bindAdminView();
     go("home");
   });
 })();

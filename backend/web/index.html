@@ -28,6 +28,7 @@
     <button data-view="new" class="tab">新建任务</button>
     <button data-view="jobs" class="tab">任务列表</button>
     <button data-view="settings" class="tab">设置</button>
+    <button data-view="admin" class="tab">⚙ 后台</button>
     <button data-view="docs" class="tab">使用文档</button>
   </nav>
   <div class="topbar-right">
@@ -385,6 +386,110 @@
         <div id="runtime-info" class="kv"></div>
       </div>
     </div>
+  
+  <!-- Admin view (后台配置: 集中管理 API Key / 路由 / 默认模型) -->
+  <section class="view" data-view="admin">
+    <div class="card glass">
+      <div class="card-head">
+        <h2>⚙ 后台配置</h2>
+        <span class="muted small" id="admin-fetched-at">加载中…</span>
+      </div>
+      <p class="muted">在这里集中管理 Agnes AI API Key、API 路由、默认 AI 模型。所有改动立即生效(route 切换除外,需要重启服务)。</p>
+
+      <!-- 1. API Key -->
+      <div class="admin-section">
+        <h3 class="admin-section-title">1. API Key</h3>
+        <p class="muted small">密钥经 AES-256-GCM 加密后存到 <code>data/.apikey</code>,不会以明文出现在任何日志或代码中。</p>
+        <div class="form">
+          <label>
+            <span>当前状态</span>
+            <div class="row">
+              <span id="admin-key-status" class="key-status checking">检查中…</span>
+            </div>
+          </label>
+          <label>
+            <span>设置新的 API Key</span>
+            <div class="row">
+              <input id="admin-api-key" type="password" placeholder="sk-..." autocomplete="off">
+              <button class="btn glass" id="admin-toggle-key">显示</button>
+            </div>
+            <span class="hint">留空表示不修改。Key 仅在保存时使用,不显示在 UI。</span>
+          </label>
+          <div class="form-actions">
+            <button class="btn glass" id="admin-test-key">测试连接</button>
+            <button class="btn ghost" id="admin-clear-key">清除已保存的 Key</button>
+            <button class="btn primary" id="admin-save-key">保存 Key</button>
+          </div>
+          <div id="admin-key-result" class="test-result hidden"></div>
+        </div>
+      </div>
+
+      <!-- 2. API Route -->
+      <div class="admin-section">
+        <h3 class="admin-section-title">2. API 路由</h3>
+        <p class="muted small">选择 Agnes AI 网关地址。切换后需要重启服务才能生效。</p>
+        <div class="route-options" id="admin-route-options">
+          <label class="route-option glass">
+            <input type="radio" name="admin-route" value="international">
+            <div class="route-option-body">
+              <div class="route-option-name">国际版 <span class="badge default">默认</span></div>
+              <div class="route-option-url">https://apihub.agnes-ai.com/v1</div>
+            </div>
+          </label>
+          <label class="route-option glass">
+            <input type="radio" name="admin-route" value="international-alt">
+            <div class="route-option-body">
+              <div class="route-option-name">国际备用</div>
+              <div class="route-option-url">https://apihub.agnes-ai.cn/v1</div>
+            </div>
+          </label>
+          <label class="route-option glass">
+            <input type="radio" name="admin-route" value="china">
+            <div class="route-option-body">
+              <div class="route-option-name">国内版</div>
+              <div class="route-option-url">https://api.agnes-ai.cn/v1</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 3. 默认 AI 模型 -->
+      <div class="admin-section">
+        <h3 class="admin-section-title">3. 默认 AI 模型</h3>
+        <p class="muted small">这些是后台的默认值。新建任务时用户可以临时覆盖这里的设置。</p>
+        <div class="form-grid-3 model-row admin-model-row">
+          <label class="mini-label">AI 剧本 (chat)
+            <select id="admin-script-model" class="mini-select"></select>
+          </label>
+          <label class="mini-label">AI 绘图 (image)
+            <select id="admin-image-model" class="mini-select"></select>
+          </label>
+          <label class="mini-label">AI 视频 (video)
+            <select id="admin-video-model" class="mini-select"></select>
+          </label>
+        </div>
+      </div>
+
+      <!-- 4. 可用模型列表 -->
+      <div class="admin-section">
+        <h3 class="admin-section-title">4. 可用模型列表</h3>
+        <p class="muted small">从当前 API Key 拉取的 Agnes 网关可用模型(只读,按类型分组)。</p>
+        <div id="admin-models-list" class="admin-models-list">
+          <div class="muted small">点击右上角"刷新"按钮拉取最新列表</div>
+        </div>
+        <div class="form-actions">
+          <button class="btn glass" id="admin-refresh-models">🔄 刷新模型列表</button>
+          <button class="btn primary" id="admin-save-models">保存默认模型</button>
+        </div>
+      </div>
+
+      <!-- 顶部右侧"刷新配置"按钮 -->
+      <div class="card-head-actions">
+        <button class="btn glass" id="admin-reload">🔄 重新加载</button>
+      </div>
+    </div>
+  </section>
+
   </section>
 
   <!-- Docs view -->

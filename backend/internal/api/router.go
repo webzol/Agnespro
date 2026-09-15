@@ -39,6 +39,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("POST /api/settings", s.updateSettings)
 	mux.HandleFunc("GET /api/settings/models", s.listModels)
+
+	// 后台管理 API(独立路径前缀,聚合 key / route / 模型配置)
+	mux.HandleFunc("GET /admin/api/config", s.adminGetConfig)
+	mux.HandleFunc("POST /admin/api/config", s.adminUpdateConfig)
+	mux.HandleFunc("POST /admin/api/config/test-key", s.adminTestKey)
 	mux.HandleFunc("POST /api/settings/key", s.setAPIKey)
 	mux.HandleFunc("POST /api/settings/key/test", s.testAPIKey)
 	mux.HandleFunc("DELETE /api/settings/key", s.clearAPIKey)
