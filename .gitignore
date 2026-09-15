@@ -48,3 +48,9 @@ backend/data/
 data/*
 !data/.gitkeep
 !data/assets/.gitkeep
+# --- Sandbox / local-only (see DEV_NOTES.md) ---
+# Go build cache redirected here because sandbox user cannot write to %LOCALAPPDATA%\go-build
+.gocache/
+.gotmp/
+# Git credential store redirected here because sandbox user cannot write to ~/.git-credentials
+.git-credentials
