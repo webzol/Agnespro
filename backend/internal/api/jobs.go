@@ -17,9 +17,11 @@ import (
 )
 
 type createJobReq struct {
-	Title  string `json:"title"`
-	Script string `json:"script"`
-	Style  string `json:"style"`
+	Title           string `json:"title"`
+	Script          string `json:"script"`
+	Style           string `json:"style"`
+	VisualStyle     string `json:"visual_style"`
+	VisualStyleName string `json:"visual_style_name"`
 }
 
 type localEpisode struct {
@@ -51,6 +53,15 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	}
 	now := time.Now()
 	parsed := pipeline.ParseEpisodes(req.Script, title)
+	// If a visual_style id was provided, use its Chinese description as the
+	// style hint that the pipeline will use for prompts.
+	if req.VisualStyle != "" {
+		if name := req.VisualStyleName; name != "" {
+			req.Style = name
+		} else {
+			req.Style = "电影感"
+		}
+	}
 	j := &types.Job{
 		ID:         "job_" + shortUUID(),
 		Title:      title,

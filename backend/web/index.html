@@ -142,8 +142,12 @@
             <input id="job-title" type="text" placeholder="例:咖啡店的奇妙夜晚">
           </label>
           <label>
-            <span>视觉风格(可选)</span>
-            <input id="job-style" type="text" placeholder="例:日式动画、电影感夜景、柔光暖色调">
+            <span>视觉风格</span>
+            <div class="style-picker" id="job-style-picker">
+              <div class="style-picker-loading">加载风格中...</div>
+            </div>
+            <input id="job-style" type="hidden" value="cinematic">
+            <span class="hint">点击下方图片选择风格,影响图像生成与视频的视觉表现。</span>
           </label>
           <label>
             <span>剧本正文</span>
@@ -181,8 +185,11 @@
             </select>
           </label>
           <label>
-            <span>视觉风格(可选)</span>
-            <input id="ai-style" type="text" placeholder="例:电影感暖色调、柔光、雨夜氛围">
+            <span>视觉风格</span>
+            <div class="style-picker" id="ai-style-picker">
+              <div class="style-picker-loading">加载风格中...</div>
+            </div>
+            <input id="ai-style" type="hidden" value="cinematic">
           </label>
           <label>
             <span>长度</span>

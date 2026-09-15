@@ -10,12 +10,27 @@ import (
 )
 
 type generateScriptReq struct {
-	Title  string `json:"title"`
-	Style  string `json:"style"`
-	Idea   string `json:"idea"`
-	Genre  string `json:"genre"`
-	Length string `json:"length"` // "short" | "medium" | "long"
-	Lang   string `json:"lang"`    // "zh" | "en"
+	Title        string `json:"title"`
+	Style        string `json:"style"`         // free-text style hint (legacy)
+	VisualStyle  string `json:"visual_style"`   // "cinematic" | "anime" | "ink" | "cyber" | "oil" | "warm" | "noir" | "scifi" | "kid" | "docu"
+	VisualStyleName string `json:"visual_style_name"`
+	Idea         string `json:"idea"`
+	Genre        string `json:"genre"`
+	Length       string `json:"length"` // "short" | "medium" | "long"
+	Lang         string `json:"lang"`    // "zh" | "en"
+}
+
+var visualStyleMap = map[string]string{
+	"cinematic": "电影级色调,戏剧光影,浅景深,电影感构图",
+	"anime":     "日式动漫风格,明亮色块,清晰线条,二次元",
+	"ink":       "中国水墨画风,留白意境,水墨晕染",
+	"cyber":     "赛博朋克,霓虹紫蓝,机械城市,未来感",
+	"oil":       "油画质感,厚重笔触,古典色彩,博物馆级",
+	"warm":      "暖色胶片,怀旧黄绿,胶片颗粒,80年代质感",
+	"noir":      "黑白电影,高对比,光影强烈,侦探片",
+	"scifi":     "未来科幻,冷蓝紫,金属质感,太空感",
+	"kid":       "童趣插画,明亮色彩,可爱风格,儿童绘本",
+	"docu":      "纪录片,自然色调,真实朴素,纪实摄影",
 }
 
 type generateScriptResp struct {
@@ -45,6 +60,16 @@ func (s *Server) generateScript(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Title == "" {
 		req.Title = "未命名剧本"
+	}
+	// Map the visual style id to a concrete Chinese description that
+	// the LLM can use to drive the image prompts downstream.
+	if req.VisualStyle == "" {
+		req.VisualStyle = "cinematic"
+	}
+	if hint, ok := visualStyleMap[req.VisualStyle]; ok {
+		req.Style = hint
+	} else if req.Style == "" {
+		req.Style = "电影感"
 	}
 
 	// Decrypt the API key. We need it to call the LLM.

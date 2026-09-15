@@ -74,6 +74,62 @@
   }
 
 
+
+  // ---------- Visual style picker ----------
+  let VISUAL_STYLES = [];
+  let SUBTITLE_STYLES = [];
+
+  async function loadVisualStyles() {
+    if (VISUAL_STYLES.length > 0) return VISUAL_STYLES;
+    try {
+      const r = await api.get("/api/styles/visual");
+      VISUAL_STYLES = r.styles || [];
+    } catch (e) { VISUAL_STYLES = []; }
+    return VISUAL_STYLES;
+  }
+
+  async function loadSubtitleStyles() {
+    if (SUBTITLE_STYLES.length > 0) return SUBTITLE_STYLES;
+    try {
+      const r = await api.get("/api/styles/subtitle");
+      SUBTITLE_STYLES = r.styles || [];
+    } catch (e) { SUBTITLE_STYLES = []; }
+    return SUBTITLE_STYLES;
+  }
+
+  function renderStylePicker(containerId, hiddenInputId) {
+    const container = document.getElementById(containerId);
+    const hidden = document.getElementById(hiddenInputId);
+    if (!container || !hidden) return;
+    container.innerHTML = "";
+    const current = hidden.value || "cinematic";
+    VISUAL_STYLES.forEach(function (s) {
+      const card = document.createElement("div");
+      card.className = "style-card" + (s.id === current ? " is-selected" : "");
+      card.dataset.styleId = s.id;
+      card.innerHTML =
+        '<img src="' + s.preview + '" alt="' + s.name + '" loading="lazy">' +
+        '<div class="style-card-desc">' + s.desc + '</div>' +
+        '<div class="style-card-label">' + s.name + '</div>';
+      card.addEventListener("click", function () {
+        container.querySelectorAll(".style-card").forEach(function (c) { c.classList.remove("is-selected"); });
+        card.classList.add("is-selected");
+        hidden.value = s.id;
+        // also write the Chinese name to a separate data attr so backend prompt can use it
+        hidden.dataset.styleName = s.name;
+      });
+      container.appendChild(card);
+    });
+  }
+
+  async function initStylePickers() {
+    await loadVisualStyles();
+    if (VISUAL_STYLES.length === 0) return;
+    renderStylePicker("job-style-picker", "job-style");
+    renderStylePicker("ai-style-picker", "ai-style");
+  }
+
+
   // ---------- API ----------
   const api = {
     base: "",
@@ -96,6 +152,60 @@
     del(p) { return this.req("DELETE", p); },
     put(p, b) { return this.req("PUT", p, b); },
   };
+
+
+  // ---------- Downloads ----------
+  function downloadUrl(url, suggestedName) {
+    const a = document.createElement("a");
+    a.href = url + (url.indexOf("?") >= 0 ? "&" : "?") + "download=1";
+    a.download = suggestedName || "";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function downloadAllForJob(jobId) {
+    try {
+      const r = await api.get("/api/jobs/" + jobId + "/download");
+      if (!r.items || r.items.length === 0) {
+        toast("没有可下载的资源", "err");
+        return;
+      }
+      toast("开始下载 " + r.items.length + " 个文件", "ok");
+      // Sequentially trigger downloads to avoid browser blocking
+      for (let i = 0; i < r.items.length; i++) {
+        const it = r.items[i];
+        setTimeout(function () {
+          downloadUrl(it.url, it.name);
+        }, i * 350);
+      }
+    } catch (e) {
+      toast(e.message, "err");
+    }
+  }
+
+  // ---------- Subtitle style preview rendering ----------
+  function substyleCSSVars(s) {
+    const css = s.color + "|" + s.font + "|" + s.size + "|" + s.outline + "|" + s.shadow + "|" + s.position + "|" + s.align;
+    return {
+      "--sub-color": s.color,
+      "--sub-font": s.font + ", sans-serif",
+      "--sub-size": (s.size * 0.35) + "px",
+      "--sub-outline": s.outline,
+      "--sub-shadow": s.shadow,
+      "--sub-align": s.align,
+    };
+  }
+  function substyleStyleString(s) {
+    return [
+      "--sub-color:" + s.color,
+      "--sub-font:" + s.font + ",sans-serif",
+      "--sub-size:" + (s.size * 0.35) + "px",
+      "--sub-outline:" + s.outline,
+      "--sub-shadow:" + s.shadow,
+      "--sub-align:" + s.align,
+    ].join(";");
+  }
 
   // ---------- Toast ----------
   const toast = (msg, kind) => {
@@ -132,9 +242,9 @@
     $$(".view").forEach((v) => v.classList.toggle("active", v.dataset.view === view));
     $$("#nav .tab").forEach((t) => t.classList.toggle("active", t.dataset.view === view));
     if (view === "home") loadHome();
-    if (view === "new") $("#job-script").focus();
+    if (view === "new") { $("#job-script").focus(); initStylePickers(); }
     if (view === "jobs") loadJobs();
-    if (view === "detail") loadJobDetail(state.currentJobId);
+    if (view === "detail") { loadSubtitleStyles().catch(function(){}); loadJobDetail(state.currentJobId); }
     if (view === "settings") loadSettings();
     if (view === "docs") loadDocs();
     // scroll to top
@@ -302,7 +412,8 @@
     result.textContent = "✨ AI 正在创作剧本,请稍候(通常 10-30 秒)…";
     applyRow.classList.add("hidden");
     try {
-      const r = await api.post("/api/scripts/generate", { title, style, idea, genre, length, lang: "zh" });
+      const visualStyle = $("#ai-style").value || "cinematic";
+      const r = await api.post("/api/scripts/generate", { title, style, idea, genre, length, lang: "zh", visual_style: visualStyle });
       lastGeneratedScript = r.script || "";
       lastGeneratedTitle = r.title || title || "未命名剧本";
       result.className = "ai-result ok";
@@ -372,7 +483,8 @@
     const style = $("#job-style").value.trim();
     if (!script) { toast("Script is required", "err"); return; }
     try {
-      const r = await api.post("/api/jobs", { title: title || "Untitled", script, style });
+      const visualStyleName = ($("#job-style").dataset.styleName || "");
+      const r = await api.post("/api/jobs", { title: title || "Untitled", script, style, visual_style: style, visual_style_name: visualStyleName });
       toast("任务已创建", "ok");
       $("#job-title").value = "";
       $("#job-script").value = "";
@@ -380,6 +492,24 @@
       $("#parse-preview").classList.add("hidden");
       go("detail", { id: r.id });
     } catch (e) { toast(e.message, "err"); }
+  }
+
+
+  // Re-render subtitle download links with the currently selected style
+  function renderSubtitleLinks(j) {
+    const sec = $("#job-detail");
+    if (!sec) return;
+    const list = sec.querySelector(".dl-list");
+    if (!list) return;
+    const sel = sec.querySelector(".substyle-card.is-selected");
+    const style = (sel && sel.dataset && sel.dataset.styleId) || "modern";
+    j.episodes.forEach(function (ep) {
+      const row = list.children[ep.index - 1];
+      if (!row) return;
+      const links = row.querySelectorAll("a");
+      // The second link in each row is the subtitle link
+      if (links[1]) links[1].href = "/api/jobs/" + j.id + "/subtitles?style=" + style;
+    });
   }
 
   // ---------- Job detail ----------
@@ -449,7 +579,56 @@
     head.appendChild(wrap);
     root.appendChild(head);
 
-    // Characters
+    // Downloads + subtitle style picker
+    if (j.episodes && j.episodes.some(function (e) { return e.video_url; })) {
+      const sec = el("div", null, [el("div", { class: "section-title" }, ["下载与字幕 ", el("span", { class: "count" }, "(字幕风格可选)")])]);
+      const grid = el("div", { class: "substyle-picker" });
+      SUBTITLE_STYLES.forEach(function (s) {
+        const card = el("div", { class: "substyle-card", "data-style-id": s.id });
+        card.setAttribute("style", substyleStyleString(s));
+        const bg = el("div", { class: "substyle-bg" });
+        bg.style.background = "linear-gradient(135deg, #2a3b6e 0%, #4a2b6e 50%, #6e2b4a 100%)";
+        card.appendChild(bg);
+        card.appendChild(el("div", { class: "substyle-label" }, s.name));
+        const textEl = el("div", { class: "substyle-text substyle-bottom" }, "深夜雨巷,他走向她");
+        card.appendChild(textEl);
+        card.addEventListener("click", function () {
+          grid.querySelectorAll(".substyle-card").forEach(function (c) { c.classList.remove("is-selected"); });
+          card.classList.add("is-selected");
+          card.dataset.selected = "1";
+          // Re-render the per-episode subtitle download links
+          renderSubtitleLinks(j);
+        });
+        if (s.id === "modern") card.classList.add("is-selected");
+        grid.appendChild(card);
+      });
+      sec.appendChild(grid);
+
+      // Action buttons
+      const actions = el("div", { class: "dl-row" });
+      actions.appendChild(el("button", { class: "btn primary", onclick: function () { downloadAllForJob(j.id); } }, ["⬇ 一键打包下载全部"]));
+      sec.appendChild(actions);
+
+      // Per-episode subtitle & video download list
+      const list = el("div", { class: "dl-list" });
+      j.episodes.forEach(function (ep) {
+        const row = el("div", { class: "dl-item" });
+        row.appendChild(el("span", { class: "dl-kind" }, "剧集 " + ep.index));
+        row.appendChild(el("span", { class: "dl-name" }, ep.title || "第 " + ep.index + " 集"));
+        if (ep.video_url) {
+          const v = el("a", { class: "btn glass", href: ep.video_url + "?download=1", download: "" }, "下载视频");
+          row.appendChild(v);
+        }
+        const sLink = el("a", { class: "btn glass", href: "/api/jobs/" + j.id + "/subtitles?style=modern", target: "_blank" }, "字幕(SRT)");
+        row.appendChild(sLink);
+        list.appendChild(row);
+      });
+      sec.appendChild(list);
+      sec.appendChild(el("div", { class: "muted", style: "margin-top:8px;font-size:12px" }, "字幕风格会写入 SRT 文件头部,ffmpeg/VLC/mpv 等播放器可识别。当前 AgnesAI 平台尚未提供 TTS 接口,音频可使用任意第三方配音服务后合成到视频中。"));
+      root.appendChild(sec);
+    }
+
+        // Characters
     if (j.characters && j.characters.length > 0) {
       const sec = el("div", null, [el("div", { class: "section-title" }, ["Characters ", el("span", { class: "count" }, "(" + j.characters.length + ")")])]);
       const grid = el("div", { class: "char-grid" });
@@ -706,6 +885,7 @@
     const mo = new MutationObserver(() => bindLiquid());
     mo.observe(document.body, { childList: true, subtree: true });
     // start at home
+    initStylePickers().catch(() => {});
     go("home");
   });
 })();

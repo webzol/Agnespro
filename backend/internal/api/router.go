@@ -53,6 +53,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/jobs/{id}/parse", s.parseJob)
 
 	mux.HandleFunc("GET /api/assets/{name}", s.serveAsset)
+	mux.HandleFunc("GET /api/jobs/{id}/subtitles", s.downloadSubtitles)
+	mux.HandleFunc("GET /api/jobs/{id}/download", s.downloadJobAssets)
+	mux.HandleFunc("GET /api/styles/visual", s.listVisualStyles)
+	mux.HandleFunc("GET /api/styles/subtitle", s.listSubtitleStyles)
 	mux.HandleFunc("POST /api/scripts/generate", s.generateScript)
 	mux.HandleFunc("GET /api/docs", s.serveDocs)
 

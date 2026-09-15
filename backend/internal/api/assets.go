@@ -12,7 +12,6 @@ func (s *Server) serveAsset(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid asset name")
 		return
 	}
-	// Defence in depth: only serve from assets dir; path traversal blocked
 	clean := filepath.Clean(name)
 	if clean != name || strings.HasPrefix(clean, ".") {
 		writeError(w, http.StatusBadRequest, "invalid asset name")
@@ -29,7 +28,6 @@ func (s *Server) serveAsset(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	// Try to set a sensible content type from the extension
 	ext := strings.ToLower(filepath.Ext(clean))
 	switch ext {
 	case ".png":
@@ -40,8 +38,14 @@ func (s *Server) serveAsset(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/webp")
 	case ".mp4":
 		w.Header().Set("Content-Type", "video/mp4")
+	case ".srt", ".vtt":
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	case ".bin":
 		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+	// Force download if ?download=1
+	if r.URL.Query().Get("download") == "1" {
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+clean+"\"")
 	}
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	http.ServeContent(w, r, clean, stat.ModTime(), f)
