@@ -29,7 +29,7 @@ async function req<T>(method: string, path: string, body?: any): Promise<T> {
 
 export const api = {
   get:    <T = any>(path: string)            => req<T>("GET", path),
-  post:   <T = any>(path: string, body: any) => req<T>("POST", path, body),
-  put:    <T = any>(path: string, body: any) => req<T>("PUT", path, body),
+  post:   <T = any>(path: string, body?: any) => req<T>("POST", path, body),
+  put:    <T = any>(path: string, body?: any) => req<T>("PUT", path, body),
   del:    <T = any>(path: string)            => req<T>("DELETE", path),
 };

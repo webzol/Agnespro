@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { jobsApi, stylesApi, adminApi } from "@/api/endpoints";
+import { jobsApi, stylesApi, adminApi, scriptApi } from "@/api/endpoints";
 import { useToast } from "@/composables/toast";
 import type { StyleLibrary, ModelInfo, VisualStyle, Genre, AspectRatio } from "@/types";
 
