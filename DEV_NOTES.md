@@ -131,3 +131,35 @@ Settings 同步加 3 个默认 model 字段
 - 浏览器实际体验风格库 modal UI
 - 跑一个完整端到端 Job 生成(视频生成耗时长+token 多,沙箱里未跑)
 
+## 9. 后台配置中心 (2026-09-15)
+
+### 需求
+"设置密钥"从前端 Settings 页面挪到独立的后台,新增后端配置 API。
+
+### 新增 endpoints (internal/api/admin.go)
+- `GET  /admin/api/config`         — 一站式 GET (key 状态/route/默认模型/可用模型列表)
+- `POST /admin/api/config`         — 一站式 POST (子集更新)
+- `POST /admin/api/config/test-key` — 测试连接
+
+### 关键设计
+- 独立路径前缀 /admin/api/,与 /api/settings/* 解耦
+- GET 一次性聚合 + 实时拉取可用模型(10s timeout)
+- POST 支持 partial update,空字段不动
+- route 切换需重启(restart_required=true,前端用 toast 提示)
+- model 切换立即生效(直接改 Pipeline.Cfg)
+- clear_api_key:true 提供清除 key 能力
+
+### 前端 admin view
+- 导航栏加 "⚙ 后台" tab
+- 4 个 section: API Key / API Route / 默认模型 / 可用模型列表
+- route radio 切换即自动保存(无需点按钮)
+- 模型 chips 点击自动填入对应 select(flash 反馈)
+
+### 复用与边界
+- 复用 testKeyResp / writeJSON / coalesceStr 等既有 helper
+- admin handler 不重复造轮子:setAPIKey / SaveSettings 逻辑仍由 settings.go 提供
+
+### 待验证(用户)
+- 浏览器实际体验 admin view UI
+- 实际切换 route + 重启服务验证生效
+
