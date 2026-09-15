@@ -14,6 +14,10 @@ type generateScriptReq struct {
 	Style        string `json:"style"`         // free-text style hint (legacy)
 	VisualStyle  string `json:"visual_style"`   // "cinematic" | "anime" | "ink" | "cyber" | "oil" | "warm" | "noir" | "scifi" | "kid" | "docu"
 	VisualStyleName string `json:"visual_style_name"`
+	Model       string `json:"model"`             // AI 剧本模型 id
+	AspectRatio string `json:"aspect_ratio,omitempty"` // 仅前端表单状态,后端不直接使用
+	EpisodeCount int    `json:"episode_count,omitempty"`
+	GenreID     string `json:"genre_id,omitempty"`
 	Idea         string `json:"idea"`
 	Genre        string `json:"genre"`
 	Length       string `json:"length"` // "short" | "medium" | "long"
@@ -126,8 +130,12 @@ func (s *Server) generateScript(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
 
+	model := req.Model
+	if model == "" {
+		model = "agnes-2.5-flash"
+	}
 	resp, err := client.Chat(ctx, agnes.ChatRequest{
-		Model: "agnes-2.5-flash",
+		Model: model,
 		Messages: []agnes.ChatMessage{
 			{Role: "system", Content: "You are a concise screenwriter. Reply in the requested language only, with the script body."},
 			{Role: "user", Content: prompt},

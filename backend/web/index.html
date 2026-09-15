@@ -154,6 +154,51 @@
             <textarea id="job-script" rows="14" placeholder="第1集 雨夜&#10;咖啡店里,林夏正看着窗外发呆。门铃响起,一个男人推门而入...&#10;&#10;第2集 重逢&#10;..."></textarea>
             <span class="hint">剧集标记支持:第N集 / Episode N / EP N / Scene N。检测不到标记时,整段作为单集处理。</span>
           </label>
+          <div class="form-grid-3">
+            <button class="chip-btn" id="btn-style-library-manual" type="button">
+              <span class="chip-icon">✨</span>
+              <span class="chip-text">风格库</span>
+              <span class="chip-value" id="chip-style-manual">汉漫厚涂</span>
+              <span class="chip-caret">▾</span>
+            </button>
+            <div class="chip-btn chip-select-wrap">
+              <span class="chip-icon">▭</span>
+              <span class="chip-text">比例</span>
+              <select id="aspect-ratio-manual" class="chip-native-select">
+                <option value="9:16">9:16 竖屏</option>
+                <option value="16:9">16:9 横屏</option>
+                <option value="1:1">1:1 方形</option>
+                <option value="3:4">3:4 轻竖屏</option>
+                <option value="4:3">4:3 传统</option>
+                <option value="21:9">21:9 电影宽屏</option>
+              </select>
+              <span class="chip-caret">▾</span>
+            </div>
+            <div class="chip-btn chip-select-wrap">
+              <span class="chip-icon">▶</span>
+              <span class="chip-text">剧集</span>
+              <select id="episode-count-manual" class="chip-native-select">
+                <option value="5">05 集</option>
+                <option value="10" selected>10 集</option>
+                <option value="20">20 集</option>
+                <option value="50">50 集</option>
+                <option value="80">80 集</option>
+                <option value="100">100 集</option>
+              </select>
+              <span class="chip-caret">▾</span>
+            </div>
+          </div>
+          <div class="form-grid-3 model-row">
+            <label class="mini-label">AI 剧本模型
+              <select id="script-model-manual" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+            <label class="mini-label">AI 绘图模型
+              <select id="image-model-manual" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+            <label class="mini-label">AI 视频模型
+              <select id="video-model-manual" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+          </div>
           <div class="form-actions">
             <button class="btn glass" id="parse-btn">仅解析剧集</button>
             <button class="btn primary" id="create-btn"><span>创建任务</span></button>
@@ -172,17 +217,15 @@
           <label>
             <span>题材</span>
             <select id="ai-genre">
-              <option value="温情短剧">温情短剧</option>
-              <option value="悬疑推理">悬疑推理</option>
-              <option value="科幻未来">科幻未来</option>
-              <option value="都市爱情">都市爱情</option>
-              <option value="校园青春">校园青春</option>
-              <option value="古风武侠">古风武侠</option>
-              <option value="家庭伦理">家庭伦理</option>
-              <option value="职场奋斗">职场奋斗</option>
-              <option value="奇幻冒险">奇幻冒险</option>
-              <option value="黑色幽默">黑色幽默</option>
-            </select>
+            <option value="urban_power">都市爽文风</option>
+            <option value="ancient_xianxia">古风权谋/仙侠</option>
+            <option value="retro_farming">年代种田风</option>
+            <option value="mystery_twist">悬疑反转风</option>
+            <option value="silly_comedy">沙雕搞笑风</option>
+            <option value="family_drama">现实家庭向</option>
+            <option value="fantasy_apocalypse">奇幻末日风</option>
+            <option value="school_youth">青春校园</option>
+          </select>
           </label>
           <label>
             <span>视觉风格</span>
@@ -204,6 +247,51 @@
             <textarea id="ai-idea" rows="5" placeholder="例:雨夜,一位独自在咖啡店加班的女孩,推门进来一位五年前不告而别的初恋男友,两人重逢后解开当年的误会。"></textarea>
             <span class="hint">越具体越好:人物、场景、核心冲突、情绪氛围。AI 会按这个写一份完整的分集剧本。</span>
           </label>
+          <div class="form-grid-3">
+            <button class="chip-btn" id="btn-style-library-ai" type="button">
+              <span class="chip-icon">✨</span>
+              <span class="chip-text">风格库</span>
+              <span class="chip-value" id="chip-style-ai">汉漫厚涂</span>
+              <span class="chip-caret">▾</span>
+            </button>
+            <div class="chip-btn chip-select-wrap">
+              <span class="chip-icon">▭</span>
+              <span class="chip-text">比例</span>
+              <select id="aspect-ratio-ai" class="chip-native-select">
+                <option value="9:16">9:16 竖屏</option>
+                <option value="16:9">16:9 横屏</option>
+                <option value="1:1">1:1 方形</option>
+                <option value="3:4">3:4 轻竖屏</option>
+                <option value="4:3">4:3 传统</option>
+                <option value="21:9">21:9 电影宽屏</option>
+              </select>
+              <span class="chip-caret">▾</span>
+            </div>
+            <div class="chip-btn chip-select-wrap">
+              <span class="chip-icon">▶</span>
+              <span class="chip-text">剧集</span>
+              <select id="episode-count-ai" class="chip-native-select">
+                <option value="5">05 集</option>
+                <option value="10" selected>10 集</option>
+                <option value="20">20 集</option>
+                <option value="50">50 集</option>
+                <option value="80">80 集</option>
+                <option value="100">100 集</option>
+              </select>
+              <span class="chip-caret">▾</span>
+            </div>
+          </div>
+          <div class="form-grid-3 model-row">
+            <label class="mini-label">AI 剧本模型
+              <select id="script-model-ai" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+            <label class="mini-label">AI 绘图模型
+              <select id="image-model-ai" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+            <label class="mini-label">AI 视频模型
+              <select id="video-model-ai" class="mini-select"><option value="">载入中...</option></select>
+            </label>
+          </div>
           <div class="form-actions">
             <button class="btn primary" id="ai-generate-btn"><span class="ai-btn-text">✨ 生成剧本</span></button>
           </div>
@@ -317,5 +405,32 @@
 
 <script src="/assets/markdown.js"></script>
 <script src="/assets/app.js"></script>
+
+  <!-- Style Library Modal -->
+  <div id="style-library-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-mask"></div>
+    <div class="modal-card glass">
+      <div class="modal-head">
+        <h3>风格库</h3>
+        <button class="modal-close" id="style-library-close" type="button">✕</button>
+      </div>
+      <div class="modal-tabs" id="style-library-tabs">
+        <button class="modal-tab is-active" data-cat="all">全部</button>
+        <button class="modal-tab" data-cat="2d">2D</button>
+        <button class="modal-tab" data-cat="3d">3D</button>
+        <button class="modal-tab" data-cat="真人">真人</button>
+      </div>
+      <div class="modal-body">
+        <div class="style-library-grid" id="style-library-grid">
+          <div class="style-library-loading">载入中...</div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span class="muted" id="style-library-selected-name">尚未选择</span>
+        <button class="btn primary" id="style-library-apply" disabled>适用</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

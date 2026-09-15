@@ -38,7 +38,14 @@ type Job struct {
 	ID         string         `json:"id"`
 	Title      string         `json:"title"`
 	Script     string         `json:"script"`
-	Style      string         `json:"style"`         // global visual style hint
+	Style       string         `json:"style"`         // global visual style hint
+	AspectRatio  string         `json:"aspect_ratio,omitempty"`  // 9:16 / 16:9 / 1:1 / 4:3 / 3:4 / 21:9
+	EpisodeCount int            `json:"episode_count,omitempty"` // 用户选择的目标集数(parser 拆集后按此截断)
+	GenreID      string         `json:"genre_id,omitempty"`      // 叙事题材 id(来自风格库)
+	GenreName    string         `json:"genre_name,omitempty"`    // 叙事题材中文名
+	ScriptModel  string         `json:"script_model,omitempty"`   // AI 剧本模型(chat)
+	ImageModel   string         `json:"image_model,omitempty"`    // AI 绘图模型
+	VideoModel   string         `json:"video_model,omitempty"`    // AI 视频模型
 	Status     JobStatus      `json:"status"`
 	Error      string         `json:"error,omitempty"`
 	Progress   int            `json:"progress"`       // 0-100
@@ -135,5 +142,8 @@ type Settings struct {
 	BaseURL       string `json:"base_url"`
 	Concurrency   int    `json:"concurrency"`
 	PollIntervalS int    `json:"poll_interval_s"`
+	ScriptModel string `json:"script_model,omitempty"` // 默认 AI 剧本模型
+	ImageModel  string `json:"image_model,omitempty"`  // 默认 AI 绘图模型
+	VideoModel  string `json:"video_model,omitempty"`  // 默认 AI 视频模型
 	UpdatedAt     time.Time `json:"updated_at"`
 }

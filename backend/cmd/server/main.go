@@ -101,12 +101,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("store: %v", err)
 	}
+	// Load persisted settings (incl. default model selections) before
+	// constructing the pipeline so they become the initial defaults.
+	savedSet, _ := st.LoadSettings()
 	pl := pipeline.New(st, cipher, pipeline.Config{
 		BaseURL:      cfg.BaseURL,
 		PollInterval: cfg.PollInterval,
 		VideoTimeout: cfg.VideoTimeout,
 		VideoSeconds: "5",
 		ImageSize:    "1024x1024",
+		ScriptModel:  ifNonEmpty(savedSet.ScriptModel, "agnes-2.5-flash"),
+		ImageModel:   ifNonEmpty(savedSet.ImageModel, "agnes-image-2.1-flash"),
+		VideoModel:   ifNonEmpty(savedSet.VideoModel, "agnes-video-v2.0"),
 	})
 	q := queue.New(cfg.Concurrency)
 	srv := api.NewServer(cfg, st, cipher, pl, q, webDirValue)
@@ -201,6 +207,14 @@ func trim(s string) string {
 	return s
 }
 
+
+// ifNonEmpty returns fallback when s is empty.
+func ifNonEmpty(s, fallback string) string {
+	if s == "" {
+		return fallback
+	}
+	return s
+}
 func indexByte(s string, b byte) int {
 	for i := 0; i < len(s); i++ {
 		if s[i] == b {

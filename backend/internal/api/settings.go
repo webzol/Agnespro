@@ -146,8 +146,11 @@ func (s *Server) setRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateSettingsReq struct {
-	Concurrency *int `json:"concurrency,omitempty"`
+	Concurrency *int   `json:"concurrency,omitempty"`
 	Style       string `json:"style,omitempty"`
+	ScriptModel string `json:"script_model,omitempty"`
+	ImageModel  string `json:"image_model,omitempty"`
+	VideoModel  string `json:"video_model,omitempty"`
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -164,6 +167,27 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 	if req.Concurrency != nil && *req.Concurrency > 0 {
 		set.Concurrency = *req.Concurrency
 	}
+	if req.ScriptModel != "" {
+		set.ScriptModel = req.ScriptModel
+	}
+	if req.ImageModel != "" {
+		set.ImageModel = req.ImageModel
+	}
+	if req.VideoModel != "" {
+		set.VideoModel = req.VideoModel
+	}
+	// live-update pipeline cfg so changes take effect without restart
+	if s.Pipeline != nil {
+		if req.ScriptModel != "" {
+			s.Pipeline.Cfg.ScriptModel = req.ScriptModel
+		}
+		if req.ImageModel != "" {
+			s.Pipeline.Cfg.ImageModel = req.ImageModel
+		}
+		if req.VideoModel != "" {
+			s.Pipeline.Cfg.VideoModel = req.VideoModel
+		}
+	}
 	if err := s.Store.SaveSettings(set); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -172,3 +196,52 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 var _ = types.StatusPending
+
+
+// listModels 调 Agnes /v1/models 返回分类后的模型列表。
+// 返回结构: {"models":[{"id":"agnes-2.5-flash","type":"chat","owned_by":"custom"},...],"fetched_at":"..."}
+// 没设 key 时返回空列表 + error 提示。
+func (s *Server) listModels(w http.ResponseWriter, r *http.Request) {
+	enc, err := s.Store.GetAPIKey()
+	if err != nil || enc == "" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"models":    []any{},
+			"hint":      "no API key configured — set one in Settings",
+			"fetched_at": time.Now(),
+		})
+		return
+	}
+	raw, err := s.Crypt.Decrypt(enc)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "decrypt api key: "+err.Error())
+		return
+	}
+	client := agnes.New(s.Cfg.BaseURL, string(raw))
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	resp, err := client.ListModels(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"models":    []any{},
+			"error":     err.Error(),
+			"fetched_at": time.Now(),
+		})
+		return
+	}
+	type item struct {
+		ID      string `json:"id"`
+		Type    string `json:"type"`
+		OwnedBy string `json:"owned_by,omitempty"`
+	}
+	var models []item
+	for _, m := range resp.Data {
+		models = append(models, item{ID: m.ID, Type: agnes.ClassifyModel(m.ID), OwnedBy: m.OwnedBy})
+	}
+	if models == nil {
+		models = []item{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"models":     models,
+		"fetched_at": time.Now(),
+	})
+}

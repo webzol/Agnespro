@@ -32,6 +32,9 @@ type Config struct {
 	VideoSeconds string
 	ImageSize    string
 	Style        string
+	ScriptModel  string // 默认 AI 剧本模型 id(chat);空则用代码 fallback
+	ImageModel   string // 默认 AI 绘图模型 id;空则用代码 fallback
+	VideoModel   string // 默认 AI 视频模型 id;空则用代码 fallback
 }
 
 func New(s *store.Store, c *cryptox.Cipher, cfg Config) *Pipeline {
@@ -48,6 +51,37 @@ func New(s *store.Store, c *cryptox.Cipher, cfg Config) *Pipeline {
 		cfg.ImageSize = "1024x1024"
 	}
 	return &Pipeline{Store: s, Crypt: c, Cfg: cfg}
+}
+
+// resolveImageSize: 根据 Job.AspectRatio 解析 image size,fallback 到 Cfg.ImageSize
+func (p *Pipeline) resolveImageSize(j *types.Job) string {
+	if j != nil && j.AspectRatio != "" {
+		if img, _ := types.ResolveAspectSize(j.AspectRatio); img != "" {
+			return img
+		}
+	}
+	return p.Cfg.ImageSize
+}
+
+// resolveVideoSize: 根据 Job.AspectRatio 解析 video size,fallback 到 1280x720
+func (p *Pipeline) resolveVideoSize(j *types.Job) string {
+	if j != nil && j.AspectRatio != "" {
+		if _, vid := types.ResolveAspectSize(j.AspectRatio); vid != "" {
+			return vid
+		}
+	}
+	return "1280x720"
+}
+
+// pickModel: 优先用 Job 的 model,fallback 到 cfg,最后用硬编码 fallback
+func pickModel(jobModel, cfgModel, fallback string) string {
+	if jobModel != "" {
+		return jobModel
+	}
+	if cfgModel != "" {
+		return cfgModel
+	}
+	return fallback
 }
 
 func (p *Pipeline) client() (*agnes.Client, error) {
@@ -241,8 +275,9 @@ func (p *Pipeline) runImageBatch(ctx context.Context, client *agnes.Client, j *t
 		time.Sleep(time.Duration(jitter.Int64()+1) * time.Second)
 
 		img, err := client.GenerateImage(ctx, agnes.ImageRequest{
+			Model:  pickModel(j.ImageModel, p.Cfg.ImageModel, "agnes-image-2.1-flash"),
 			Prompt: it.Prompt,
-			Size:   p.Cfg.ImageSize,
+			Size:   p.resolveImageSize(j),
 		})
 		if err != nil {
 			return fmt.Errorf("image %s: %w", it.RefType, err)
@@ -384,8 +419,10 @@ func (p *Pipeline) runEpisode(ctx context.Context, client *agnes.Client, j *type
 
 	videoPrompt := buildVideoPrompt(ep.Title, ep.Scenes, p.Cfg.Style)
 	vid, err := client.CreateVideo(ctx, agnes.VideoRequest{
+		Model:          pickModel(j.VideoModel, p.Cfg.VideoModel, "agnes-video-v2.0"),
 		Prompt:         videoPrompt,
 		Seconds:        p.Cfg.VideoSeconds,
+		Size:           p.resolveVideoSize(j),
 		InputReference: imageURLs,
 	})
 	if err != nil {
@@ -434,8 +471,9 @@ func (p *Pipeline) runEpisodeImageBatch(ctx context.Context, client *agnes.Clien
 		time.Sleep(time.Duration(jitter.Int64()+1) * time.Second)
 
 		img, err := client.GenerateImage(ctx, agnes.ImageRequest{
+			Model:  pickModel(j.ImageModel, p.Cfg.ImageModel, "agnes-image-2.1-flash"),
 			Prompt: it.Prompt,
-			Size:   p.Cfg.ImageSize,
+			Size:   p.resolveImageSize(j),
 		})
 		if err != nil {
 			return fmt.Errorf("image scene %d: %w", i+1, err)

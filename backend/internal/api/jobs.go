@@ -22,6 +22,13 @@ type createJobReq struct {
 	Style           string `json:"style"`
 	VisualStyle     string `json:"visual_style"`
 	VisualStyleName string `json:"visual_style_name"`
+	AspectRatio     string `json:"aspect_ratio"`     // 9:16 / 16:9 / 1:1 / 4:3 / 3:4 / 21:9
+	EpisodeCount    int    `json:"episode_count"`    // 用户选择的目标集数
+	GenreID         string `json:"genre_id"`         // 叙事题材 id(来自风格库)
+	GenreName       string `json:"genre_name"`       // 叙事题材中文名
+	ScriptModel     string `json:"script_model"`     // AI 剧本模型(chat)
+	ImageModel      string `json:"image_model"`      // AI 绘图模型
+	VideoModel      string `json:"video_model"`      // AI 视频模型
 }
 
 type localEpisode struct {
@@ -52,7 +59,6 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		title = "Untitled"
 	}
 	now := time.Now()
-	parsed := pipeline.ParseEpisodes(req.Script, title)
 	// If a visual_style id was provided, use its Chinese description as the
 	// style hint that the pipeline will use for prompts.
 	if req.VisualStyle != "" {
@@ -62,17 +68,29 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 			req.Style = "电影感"
 		}
 	}
+	parsed := pipeline.ParseEpisodes(req.Script, title)
+	// If user picked a target episode count, truncate the parsed list
+	if req.EpisodeCount > 0 && len(parsed) > req.EpisodeCount {
+		parsed = parsed[:req.EpisodeCount]
+	}
 	j := &types.Job{
-		ID:         "job_" + shortUUID(),
-		Title:      title,
-		Script:     req.Script,
-		Style:      req.Style,
-		Status:     types.StatusPending,
-		Progress:   0,
-		Episodes:   make([]types.Episode, len(parsed)),
-		NumEpisodes: len(parsed),
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:           "job_" + shortUUID(),
+		Title:        title,
+		Script:       req.Script,
+		Style:        req.Style,
+		AspectRatio:  req.AspectRatio,
+		EpisodeCount: req.EpisodeCount,
+		GenreID:      req.GenreID,
+		GenreName:    req.GenreName,
+		ScriptModel:  req.ScriptModel,
+		ImageModel:   req.ImageModel,
+		VideoModel:   req.VideoModel,
+		Status:       types.StatusPending,
+		Progress:     0,
+		Episodes:     make([]types.Episode, len(parsed)),
+		NumEpisodes:  len(parsed),
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 	for i, ep := range parsed {
 		j.Episodes[i] = types.Episode{

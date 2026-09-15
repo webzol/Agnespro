@@ -240,16 +240,16 @@ type visualStyle struct {
 }
 
 var visualStyles = []visualStyle{
-	{ID: "cinematic", Name: "电影感", Desc: "电影级色调,戏剧光影", Preview: "/assets/img/style_cinematic.png"},
-	{ID: "anime", Name: "日式动漫", Desc: "明亮二次元,色块分明", Preview: "/assets/img/style_anime.png"},
-	{ID: "ink", Name: "水墨国风", Desc: "水墨晕染,留白意境", Preview: "/assets/img/style_ink.png"},
-	{ID: "cyber", Name: "赛博朋克", Desc: "霓虹紫蓝,机械城市", Preview: "/assets/img/style_cyber.png"},
-	{ID: "oil", Name: "油画质感", Desc: "厚重笔触,古典色彩", Preview: "/assets/img/style_oil.png"},
-	{ID: "warm", Name: "暖色胶片", Desc: "怀旧黄绿,胶片颗粒", Preview: "/assets/img/style_warm.png"},
-	{ID: "noir", Name: "黑色电影", Desc: "高对比黑白,光影强烈", Preview: "/assets/img/style_noir.png"},
-	{ID: "scifi", Name: "赛博科幻", Desc: "冷蓝紫,未来金属", Preview: "/assets/img/style_scifi.png"},
-	{ID: "kid", Name: "童趣插画", Desc: "明亮色彩,可爱风格", Preview: "/assets/img/style_kid.png"},
-	{ID: "docu", Name: "纪录片", Desc: "自然色调,真实朴素", Preview: "/assets/img/style_docu.png"},
+	{ID: "cinematic", Name: "电影感", Desc: "电影级色调,戏剧光影", Preview: "/assets/img/style/cinematic.png"},
+	{ID: "anime", Name: "日式动漫", Desc: "明亮二次元,色块分明", Preview: "/assets/img/style/anime.png"},
+	{ID: "ink", Name: "水墨国风", Desc: "水墨晕染,留白意境", Preview: "/assets/img/style/ink.png"},
+	{ID: "cyber", Name: "赛博朋克", Desc: "霓虹紫蓝,机械城市", Preview: "/assets/img/style/cyber.png"},
+	{ID: "oil", Name: "油画质感", Desc: "厚重笔触,古典色彩", Preview: "/assets/img/style/oil.png"},
+	{ID: "warm", Name: "暖色胶片", Desc: "怀旧黄绿,胶片颗粒", Preview: "/assets/img/style/warm.png"},
+	{ID: "noir", Name: "黑色电影", Desc: "高对比黑白,光影强烈", Preview: "/assets/img/style/noir.png"},
+	{ID: "scifi", Name: "赛博科幻", Desc: "冷蓝紫,未来金属", Preview: "/assets/img/style/scifi.png"},
+	{ID: "kid", Name: "童趣插画", Desc: "明亮色彩,可爱风格", Preview: "/assets/img/style/kid.png"},
+	{ID: "docu", Name: "纪录片", Desc: "自然色调,真实朴素", Preview: "/assets/img/style/docu.png"},
 }
 
 func (s *Server) listVisualStyles(w http.ResponseWriter, r *http.Request) {

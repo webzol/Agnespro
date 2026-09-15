@@ -78,6 +78,9 @@
   // ---------- Visual style picker ----------
   let VISUAL_STYLES = [];
   let SUBTITLE_STYLES = [];
+  let STYLE_LIBRARY = { visual_styles: [], genres: [], aspect_ratios: [], episode_counts: [] };
+  let MODEL_LIST = [];
+  let STYLE_LIBRARY_PENDING = null;  // {onSelect(id,name)} 或成功后调用
 
   async function loadVisualStyles() {
     if (VISUAL_STYLES.length > 0) return VISUAL_STYLES;
@@ -95,6 +98,47 @@
       SUBTITLE_STYLES = r.styles || [];
     } catch (e) { SUBTITLE_STYLES = []; }
     return SUBTITLE_STYLES;
+  }
+
+  async function loadStyleLibrary() {
+    try {
+      const r = await api.get("/api/styles/library");
+      STYLE_LIBRARY = r || STYLE_LIBRARY;
+    } catch (e) { console.warn("loadStyleLibrary failed", e); }
+    return STYLE_LIBRARY;
+  }
+
+  async function loadModels() {
+    try {
+      const r = await api.get("/api/settings/models");
+      MODEL_LIST = (r && r.models) || [];
+    } catch (e) { console.warn("loadModels failed", e); MODEL_LIST = []; }
+    return MODEL_LIST;
+  }
+
+  function fillModelSelect(sel, typeFilter, fallbackDefault) {
+    if (!sel) return;
+    const list = MODEL_LIST.filter(function (m) { return m.type === typeFilter; });
+    const cur = sel.value || "";
+    sel.innerHTML = "";
+    if (list.length === 0) {
+      const o = document.createElement("option");
+      o.value = fallbackDefault || "";
+      o.textContent = "未获取到模型列表";
+      sel.appendChild(o);
+      return;
+    }
+    list.forEach(function (m) {
+      const o = document.createElement("option");
+      o.value = m.id;
+      o.textContent = m.id + (m.owned_by ? "  (" + m.owned_by + ")" : "");
+      sel.appendChild(o);
+    });
+    if (cur && list.find(function (m) { return m.id === cur; })) {
+      sel.value = cur;
+    } else {
+      sel.value = list.find(function (m) { return m.id === fallbackDefault; }) ? fallbackDefault : list[0].id;
+    }
   }
 
   function renderStylePicker(containerId, hiddenInputId) {
@@ -123,10 +167,133 @@
   }
 
   async function initStylePickers() {
-    await loadVisualStyles();
-    if (VISUAL_STYLES.length === 0) return;
-    renderStylePicker("job-style-picker", "job-style");
-    renderStylePicker("ai-style-picker", "ai-style");
+    await Promise.all([loadVisualStyles(), loadStyleLibrary(), loadModels()]);
+    if (VISUAL_STYLES.length === 0 && STYLE_LIBRARY.visual_styles.length === 0) return;
+    if (VISUAL_STYLES.length > 0) {
+      renderStylePicker("job-style-picker", "job-style");
+      renderStylePicker("ai-style-picker", "ai-style");
+    }
+    // Fill model selects (manual + AI modes)
+    fillModelSelect(document.getElementById("script-model-manual"), "chat", "agnes-2.5-flash");
+    fillModelSelect(document.getElementById("image-model-manual"),  "image", "agnes-image-2.1-flash");
+    fillModelSelect(document.getElementById("video-model-manual"),  "video", "agnes-video-v2.0");
+    fillModelSelect(document.getElementById("script-model-ai"), "chat", "agnes-2.5-flash");
+    fillModelSelect(document.getElementById("image-model-ai"),  "image", "agnes-image-2.1-flash");
+    fillModelSelect(document.getElementById("video-model-ai"),  "video", "agnes-video-v2.0");
+    // Bind style-library buttons
+    bindStyleLibraryButton("btn-style-library-manual", "chip-style-manual", "job-style", "job-style-picker");
+    bindStyleLibraryButton("btn-style-library-ai",     "chip-style-ai",     "ai-style",  "ai-style-picker");
+  }
+
+  function bindStyleLibraryButton(btnId, chipId, hiddenInputId, pickerContainerId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      openStyleLibraryModal(function (chosen) {
+        const hidden = document.getElementById(hiddenInputId);
+        if (hidden) {
+          hidden.value = chosen.id;
+          hidden.dataset.styleName = chosen.name;
+        }
+        const chip = document.getElementById(chipId);
+        if (chip) chip.textContent = chosen.name;
+        // Also reflect the choice inside the inline picker (sync selection state)
+        const picker = document.getElementById(pickerContainerId);
+        if (picker) {
+          picker.querySelectorAll(".style-card").forEach(function (c) {
+            c.classList.toggle("is-selected", c.dataset.styleId === chosen.id);
+          });
+        }
+      });
+    });
+  }
+
+  function openStyleLibraryModal(onSelect) {
+    const modal = document.getElementById("style-library-modal");
+    if (!modal) return;
+    STYLE_LIBRARY_PENDING = onSelect || null;
+    modal.classList.remove("hidden");
+    renderStyleLibraryGrid("all");
+    const tabs = document.getElementById("style-library-tabs");
+    if (tabs) {
+      tabs.querySelectorAll(".modal-tab").forEach(function (t) {
+        t.classList.toggle("is-active", t.dataset.cat === "all");
+      });
+    }
+    const nameLabel = document.getElementById("style-library-selected-name");
+    if (nameLabel) nameLabel.textContent = "尚未选择";
+    const applyBtn = document.getElementById("style-library-apply");
+    if (applyBtn) applyBtn.disabled = true;
+    applyBtn && applyBtn.removeAttribute("data-chosen");
+  }
+
+  function closeStyleLibraryModal() {
+    const modal = document.getElementById("style-library-modal");
+    if (modal) modal.classList.add("hidden");
+    STYLE_LIBRARY_PENDING = null;
+  }
+
+  function renderStyleLibraryGrid(category) {
+    const grid = document.getElementById("style-library-grid");
+    if (!grid) return;
+    const all = STYLE_LIBRARY.visual_styles || [];
+    const list = category === "all" ? all : all.filter(function (s) { return s.category === category; });
+    if (list.length === 0) {
+      grid.innerHTML = '<div class="style-library-empty">没有匹配的风格</div>';
+      return;
+    }
+    grid.innerHTML = "";
+    list.forEach(function (s) {
+      const card = document.createElement("div");
+      card.className = "style-library-card";
+      card.dataset.styleId = s.id;
+      card.dataset.styleName = s.name;
+      card.innerHTML =
+        '<div class="slc-img-wrap"><img src="' + (s.preview || "") + '" alt="' + s.name + '" loading="lazy" onerror="this.parentNode.classList.add(\'slc-img-missing\'); this.style.display=\'none\'"></div>' +
+        '<div class="slc-name">' + s.name + '</div>' +
+        '<div class="slc-desc">' + (s.desc || "") + '</div>';
+      card.addEventListener("click", function () {
+        grid.querySelectorAll(".style-library-card").forEach(function (c) { c.classList.remove("is-selected"); });
+        card.classList.add("is-selected");
+        const nameLabel = document.getElementById("style-library-selected-name");
+        if (nameLabel) nameLabel.textContent = s.name;
+        const applyBtn = document.getElementById("style-library-apply");
+        if (applyBtn) {
+          applyBtn.disabled = false;
+          applyBtn.dataset.chosenId = s.id;
+          applyBtn.dataset.chosenName = s.name;
+        }
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function initStyleLibraryModal() {
+    const closeBtn = document.getElementById("style-library-close");
+    if (closeBtn) closeBtn.addEventListener("click", closeStyleLibraryModal);
+    const mask = document.querySelector("#style-library-modal .modal-mask");
+    if (mask) mask.addEventListener("click", closeStyleLibraryModal);
+    const tabs = document.getElementById("style-library-tabs");
+    if (tabs) {
+      tabs.addEventListener("click", function (e) {
+        const t = e.target.closest(".modal-tab");
+        if (!t) return;
+        tabs.querySelectorAll(".modal-tab").forEach(function (x) { x.classList.remove("is-active"); });
+        t.classList.add("is-active");
+        renderStyleLibraryGrid(t.dataset.cat);
+      });
+    }
+    const applyBtn = document.getElementById("style-library-apply");
+    if (applyBtn) {
+      applyBtn.addEventListener("click", function () {
+        const id = applyBtn.dataset.chosenId;
+        const name = applyBtn.dataset.chosenName;
+        if (!id) return;
+        const cb = STYLE_LIBRARY_PENDING;
+        closeStyleLibraryModal();
+        if (cb) cb({ id: id, name: name });
+      });
+    }
   }
 
 
@@ -413,7 +580,23 @@
     applyRow.classList.add("hidden");
     try {
       const visualStyle = $("#ai-style").value || "cinematic";
-      const r = await api.post("/api/scripts/generate", { title, style, idea, genre, length, lang: "zh", visual_style: visualStyle });
+      const visualStyleName = ($("#ai-style").dataset.styleName || "");
+      const aspectRatio = ($("#aspect-ratio-ai") && $("#aspect-ratio-ai").value) || "";
+      const episodeCount = parseInt((($("#episode-count-ai") && $("#episode-count-ai").value) || "0"), 10) || 0;
+      const scriptModel = ($("#script-model-ai") && $("#script-model-ai").value) || "";
+      const r = await api.post("/api/scripts/generate", {
+        title,
+        style,
+        idea,
+        genre,
+        length,
+        lang: "zh",
+        visual_style: visualStyle,
+        visual_style_name: visualStyleName,
+        aspect_ratio: aspectRatio,
+        episode_count: episodeCount,
+        script_model: scriptModel,
+      });
       lastGeneratedScript = r.script || "";
       lastGeneratedTitle = r.title || title || "未命名剧本";
       result.className = "ai-result ok";
@@ -484,7 +667,23 @@
     if (!script) { toast("Script is required", "err"); return; }
     try {
       const visualStyleName = ($("#job-style").dataset.styleName || "");
-      const r = await api.post("/api/jobs", { title: title || "Untitled", script, style, visual_style: style, visual_style_name: visualStyleName });
+      const aspectRatio = ($("#aspect-ratio-manual") && $("#aspect-ratio-manual").value) || "";
+      const episodeCount = parseInt((($("#episode-count-manual") && $("#episode-count-manual").value) || "0"), 10) || 0;
+      const scriptModel = ($("#script-model-manual") && $("#script-model-manual").value) || "";
+      const imageModel  = ($("#image-model-manual")  && $("#image-model-manual").value)  || "";
+      const videoModel  = ($("#video-model-manual")  && $("#video-model-manual").value)  || "";
+      const r = await api.post("/api/jobs", {
+        title: title || "Untitled",
+        script,
+        style,
+        visual_style: style,
+        visual_style_name: visualStyleName,
+        aspect_ratio: aspectRatio,
+        episode_count: episodeCount,
+        script_model: scriptModel,
+        image_model: imageModel,
+        video_model: videoModel,
+      });
       toast("任务已创建", "ok");
       $("#job-title").value = "";
       $("#job-script").value = "";
@@ -886,6 +1085,7 @@
     mo.observe(document.body, { childList: true, subtree: true });
     // start at home
     initStylePickers().catch(() => {});
+    initStyleLibraryModal();
     go("home");
   });
 })();
