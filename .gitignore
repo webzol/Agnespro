@@ -54,3 +54,25 @@ data/*
 .gotmp/
 # Git credential store redirected here because sandbox user cannot write to ~/.git-credentials
 .git-credentials
+
+# --- Vite build artifacts (rebuilt on every build) ---
+backend/web/assets/HomeView-*.js
+backend/web/assets/NewJobView-*.js
+backend/web/assets/JobsView-*.js
+backend/web/assets/JobDetailView-*.js
+backend/web/assets/SettingsView-*.js
+backend/web/assets/AdminView-*.js
+backend/web/assets/DocsView-*.js
+backend/web/assets/index-*.js
+backend/web/assets/index-*.css
+backend/web/assets/_plugin-*.js
+backend/web/assets/*-*.css
+backend/web/assets/endpoints-*.js
+backend/web/assets/types-*.js
+backend/web/assets/components-*.js
+backend/web/assets/composables-*.js
+backend/web/assets/api-*.js
+
+# --- Local design files / reference repos ---
+UI设计图/
+frontend-reference/
