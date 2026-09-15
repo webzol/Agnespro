@@ -74,3 +74,60 @@ go build -o server.exe ./cmd/server
 ## 7. 变更记录
 
 - 2026-09-15：首次拉取仓库 + 本地启动成功（PID 见 `data/server.pid`，如果存在）。处理 PAT 泄露：`.git/config` URL 抹掉 token，凭据重定向到仓库本地文件。`.gitignore` 补 `.gocache/`、`.gotmp/`、`.git-credentials`。
+
+## 8. 风格库 v2 + AI 模型选择 + 视频比例 + 剧集数（2026-09-15）
+
+### 新增 endpoints
+- `GET /api/styles/library` — 一次返回视觉画风库(24)+ 叙事题材(8)
+  + 比例(6) + 剧集预设(6) 全部数据
+- `GET /api/settings/models` — 用已设置 key 调 Agnes /v1/models,
+  按 ID 前缀(`-image-` / `-video-`)分类返回 chat/image/video 列表
+
+### 数据模型扩展（types.go）
+Job 加 7 个字段:
+- AspectRatio / EpisodeCount / GenreID / GenreName
+- ScriptModel / ImageModel / VideoModel
+Settings 同步加 3 个默认 model 字段
+
+### 三级 model fallback（pipeline.go）
+`pickModel(jobModel, cfgModel, fallback)`:
+1. Job 字段（用户在 NewJob 选的）
+2. Pipeline.Cfg（用户在 Settings 设的默认）
+3. 代码硬编码（agnes-2.5-flash / agnes-image-2.1-flash / agnes-video-v2.0）
+
+修改 pipeline 启动时从 settings 注入默认 model;
+通过 POST /api/settings 改 model 后实时更新 Pipeline.Cfg（无需重启）。
+
+### 比例 size 映射
+- 6 个比例 → image size + video size 两套
+- Agnes 视频原生支持 720x1280 / 1280x720 / 1024x1024
+- 映射表在 internal/types/aspect.go,跨 api/pipeline 包共享
+
+### 关键决策
+- `decodeJSON` 默认 DisallowUnknownFields(strict)，
+  generateScriptReq 必须显式接收所有前端传的字段，否则 400
+- 风格库预览图：用 API key 批量调 image API 生成 24 张(每张 1-2.5 MB)
+- API key 仅在内存中使用，data/.apikey 已加密存盘;不写入任何文件/commit
+
+### 关键踩坑
+1. **json DisallowUnknownFields**：前端加了新字段 (aspect_ratio) 但后端
+   struct 没声明 → 直接 400。修法是给 generateScriptReq 也声明这些字段
+   (即使后端暂不使用,只是收下避免报错)
+2. **跨包 helper 调用**：resolveAspectSize 原本在 api 包,
+   pipeline 包也要用 → 移到 types 公共包
+3. **遗漏的 Size 参数**：原本 pipeline.go 调 CreateVideo 时**没传 Size**,
+   全部视频都用默认 1280x720;这次顺手补上了
+4. **types/aspect.go 初次创建失败**：大 Python 脚本里其中一个
+   replace 没生效(类型残留),编译报"imported and not used";
+   单独跑一个小 Python 创建后立刻成功
+
+### 前端改动
+- index.html: 替换 ai-genre 10→8 项,两种模式都加 chip-btn x 3 + 模型下拉 x 3
+- app.js: loadStyleLibrary/loadModels + modal 控制 + 字段透传
+- style.css: +6KB 样式(chip-btn/modal/style-library-grid)
+- web/assets/img/library/: 24 张 AI 生成预览图(全部能 serve 200)
+
+### 待验证（用户做）
+- 浏览器实际体验风格库 modal UI
+- 跑一个完整端到端 Job 生成(视频生成耗时长+token 多,沙箱里未跑)
+
