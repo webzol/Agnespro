@@ -62,17 +62,19 @@ function render(text: string): string {
 </template>
 
 <style scoped>
-.card { padding: 24px; }
-.docs-body { line-height: 1.7; font-size: 14px; }
-.docs-body :deep(h1) { font-size: 24px; margin: 20px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-.docs-body :deep(h2) { font-size: 20px; margin: 18px 0 10px; color: var(--text); }
-.docs-body :deep(h3) { font-size: 16px; margin: 14px 0 8px; }
-.docs-body :deep(p) { margin: 10px 0; }
-.docs-body :deep(ul) { margin: 10px 0; padding-left: 24px; }
-.docs-body :deep(li) { margin: 4px 0; }
-.docs-body :deep(code) { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
-.docs-body :deep(pre) { background: rgba(0,0,0,.3); padding: 14px; border-radius: 10px; overflow-x: auto; margin: 12px 0; }
-.docs-body :deep(pre code) { background: transparent; padding: 0; }
-.docs-body :deep(strong) { color: var(--text); }
-.docs-body :deep(a) { color: var(--accent); }
+.card { padding: 28px; }
+.docs-body { line-height: 1.75; font-size: 14px; color: var(--text-soft); }
+.docs-body :deep(h1) { font-size: 24px; margin: 24px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text); font-weight: 700; }
+.docs-body :deep(h2) { font-size: 20px; margin: 22px 0 10px; color: var(--text); font-weight: 600; }
+.docs-body :deep(h3) { font-size: 16px; margin: 16px 0 8px; color: var(--text); font-weight: 600; }
+.docs-body :deep(h4) { font-size: 14px; margin: 14px 0 6px; color: var(--text); font-weight: 600; }
+.docs-body :deep(p) { margin: 10px 0; color: var(--text-soft); }
+.docs-body :deep(ul) { margin: 10px 0; padding-left: 24px; color: var(--text-soft); }
+.docs-body :deep(li) { margin: 6px 0; }
+.docs-body :deep(code) { background: var(--card-soft); border: 1px solid var(--border-soft); padding: 1px 7px; border-radius: 5px; font-size: 12px; color: var(--primary-deep); font-family: ui-monospace, monospace; }
+.docs-body :deep(pre) { background: var(--card-soft); border: 1px solid var(--border-soft); padding: 14px 16px; border-radius: var(--r-sm); overflow-x: auto; margin: 12px 0; }
+.docs-body :deep(pre code) { background: transparent; border: 0; padding: 0; color: var(--text); }
+.docs-body :deep(strong) { color: var(--text); font-weight: 600; }
+.docs-body :deep(a) { color: var(--primary-deep); text-decoration: none; border-bottom: 1px dashed rgba(20, 184, 166, .4); }
+.docs-body :deep(a:hover) { color: var(--primary-deep-2); border-bottom-style: solid; }
 </style>

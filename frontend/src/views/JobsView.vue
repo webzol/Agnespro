@@ -63,19 +63,21 @@ function fmt(d: string) { return d ? new Date(d).toLocaleString() : ""; }
 
 <style scoped>
 .row { display: flex; gap: 8px; align-items: center; }
-.search { background: rgba(255,255,255,.04); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 9px 12px; outline: none; min-width: 200px; }
-.search:focus { border-color: var(--primary); }
+.search { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: var(--r-sm); padding: 9px 14px; outline: none; min-width: 220px; font-size: 13px; transition: border-color .15s, box-shadow .15s; }
+.search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20, 184, 166, .12); }
+.search::placeholder { color: var(--text-faint); }
 .job-list { display: flex; flex-direction: column; gap: 10px; }
-.job-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; cursor: pointer; transition: all .15s; border-radius: 12px; }
-.job-row:hover { transform: translateY(-1px); border-color: var(--border-strong); }
-.job-row-main { flex: 1; }
-.job-title { font-weight: 600; margin-bottom: 4px; }
-.job-row-meta { display: flex; align-items: center; gap: 10px; }
-.badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
-.badge-pending, .badge-planning { background: rgba(120,120,150,.18); color: #ccc; }
-.badge-characters, .badge-props, .badge-scenes { background: rgba(99,102,241,.18); color: #a5b4fc; }
-.badge-video { background: rgba(168,85,247,.18); color: #c4b5fd; }
-.badge-done { background: rgba(74,222,128,.18); color: #86efac; }
-.badge-failed, .badge-cancelled { background: rgba(248,113,113,.18); color: #fca5a5; }
+.job-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; cursor: pointer; transition: all .15s; border-radius: var(--r-md); background: var(--card); border: 1px solid var(--border-soft); }
+.job-row:hover { transform: translateY(-1px); border-color: rgba(20, 184, 166, .35); box-shadow: var(--shadow-sm); }
+.job-row-main { flex: 1; min-width: 0; }
+.job-title { font-weight: 600; margin-bottom: 4px; color: var(--text); }
+.job-row-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .btn.small { padding: 4px 10px; font-size: 12px; }
+
+/* Light-theme badges (override scoped defaults) */
+.badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; }
+.badge-pending, .badge-planning { background: #F1F2F6; color: #6B7280; border: 1px solid #E5E7EB; }
+.badge-characters, .badge-props, .badge-scenes, .badge-video { background: rgba(20, 184, 166, .10); color: var(--primary-deep); border: 1px solid rgba(20, 184, 166, .25); }
+.badge-done { background: rgba(16, 185, 129, .12); color: #047857; border: 1px solid rgba(16, 185, 129, .30); }
+.badge-failed, .badge-cancelled { background: rgba(239, 68, 68, .10); color: #B91C1C; border: 1px solid rgba(239, 68, 68, .25); }
 </style>

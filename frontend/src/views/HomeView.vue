@@ -110,7 +110,7 @@ onMounted(async () => {
     </div>
   </header>
 
-  <div class="content">
+  <div>
     <!-- Summary card -->
     <div class="card summary">
       <div class="summary-main">

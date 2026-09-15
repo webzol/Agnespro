@@ -84,14 +84,29 @@ func (s *Server) staticHandler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		// SPA fallback: serve index.html for paths that don't have an extension
-		if filepath.Ext(p) == "" && p != "/" {
-			full := filepath.Join(s.WebDir, p)
-			if _, err := os.Stat(full); os.IsNotExist(err) {
-				http.ServeFile(w, r, filepath.Join(s.WebDir, "index.html"))
+
+		// Resolve the on-disk path; disable directory listing entirely.
+		full := filepath.Join(s.WebDir, filepath.Clean(p))
+		info, statErr := os.Stat(full)
+
+		if statErr == nil && info.IsDir() {
+			// Directory with index.html → serve it; otherwise return 404 (no listing).
+			indexPath := filepath.Join(full, "index.html")
+			if _, err := os.Stat(indexPath); err == nil {
+				http.ServeFile(w, r, indexPath)
 				return
 			}
+			http.NotFound(w, r)
+			return
 		}
+
+		// SPA fallback: for extensionless paths that don't exist on disk,
+		// serve the SPA's index.html so client-side routing can take over.
+		if os.IsNotExist(statErr) && filepath.Ext(p) == "" && p != "/" {
+			http.ServeFile(w, r, filepath.Join(s.WebDir, "index.html"))
+			return
+		}
+
 		// Normal file server
 		fs.ServeHTTP(w, r)
 	})

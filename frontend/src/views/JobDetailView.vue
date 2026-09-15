@@ -158,36 +158,36 @@ function epStateLabel(s: string) { return ({pending:"待处理", running:"进行
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .card-head h2 { font-size: 18px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
-.progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-.progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; }
-.progress-bar > div { height: 100%; background: var(--grad); transition: width .4s; }
-.err-banner { padding: 12px; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); border-radius: 10px; color: #fca5a5; font-size: 13px; margin-bottom: 14px; }
+.progress-wrap { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.progress-bar { flex: 1; height: 6px; background: var(--card-soft); border-radius: 999px; overflow: hidden; border: 1px solid var(--border-soft); }
+.progress-bar > div { height: 100%; background: var(--grad); transition: width .4s; border-radius: 999px; }
+.err-banner { padding: 12px 14px; background: rgba(239, 68, 68, .08); border: 1px solid rgba(239, 68, 68, .25); border-radius: var(--r-sm); color: #B91C1C; font-size: 13px; margin-bottom: 14px; }
 .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 14px; }
-.stat { text-align: center; padding: 12px; background: rgba(255,255,255,.04); border-radius: 10px; }
-.stat .num { display: block; font-size: 24px; font-weight: 700; }
+.stat { text-align: center; padding: 14px 12px; background: var(--card-soft); border-radius: var(--r-sm); border: 1px solid var(--border-soft); }
+.stat .num { display: block; font-size: 22px; font-weight: 700; color: var(--text); background: var(--grad-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .stat .lbl { font-size: 11px; color: var(--text-muted); }
-.model-strip { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border); }
-.model-strip code { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 5px; font-size: 11px; }
-h3 { font-size: 15px; margin-bottom: 12px; }
+.model-strip { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); padding-top: 12px; border-top: 1px dashed var(--border); margin-top: 4px; }
+.model-strip code { background: var(--card-soft); padding: 2px 7px; border-radius: 5px; font-size: 11px; color: var(--text); border: 1px solid var(--border-soft); font-family: ui-monospace, monospace; }
+h3 { font-size: 15px; margin-bottom: 12px; color: var(--text); font-weight: 600; }
 .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-.asset { aspect-ratio: 3/4; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,.04); border: 1px solid var(--border); position: relative; }
+.asset { aspect-ratio: 3/4; border-radius: var(--r-sm); overflow: hidden; background: var(--card-soft); border: 1px solid var(--border); position: relative; }
 .asset img { width: 100%; height: 100%; object-fit: cover; }
 .asset .pending { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px; }
-.asset-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px 8px; background: linear-gradient(to top, rgba(0,0,0,.85), transparent); font-size: 11px; }
+.asset-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px 8px; background: linear-gradient(to top, rgba(20, 30, 60, .85), transparent); font-size: 11px; color: #fff; }
 .episode { margin-top: 14px; }
-.episode-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.episode-head h4 { font-size: 14px; }
+.episode-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px; flex-wrap: wrap; }
+.episode-head h4 { font-size: 14px; color: var(--text); font-weight: 600; }
 .ep-body { margin-bottom: 10px; max-height: 80px; overflow: hidden; }
-.badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
-.badge-running, .badge-video { background: rgba(168,85,247,.18); color: #c4b5fd; }
-.badge-done { background: rgba(74,222,128,.18); color: #86efac; }
-.badge-failed, .badge-skipped { background: rgba(248,113,113,.18); color: #fca5a5; }
-.badge-pending, .badge-characters, .badge-props, .badge-scenes { background: rgba(99,102,241,.18); color: #a5b4fc; }
+.badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+.badge-running, .badge-video { background: rgba(20, 184, 166, .10); color: var(--primary-deep); border: 1px solid rgba(20, 184, 166, .25); }
+.badge-done { background: rgba(16, 185, 129, .12); color: #047857; border: 1px solid rgba(16, 185, 129, .30); }
+.badge-failed, .badge-skipped { background: rgba(239, 68, 68, .10); color: #B91C1C; border: 1px solid rgba(239, 68, 68, .25); }
+.badge-pending, .badge-characters, .badge-props, .badge-scenes { background: var(--grad-soft); color: var(--primary-deep); border: 1px solid rgba(20, 184, 166, .25); }
 .ep-video { margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
-.ep-video video { width: 100%; max-width: 480px; border-radius: 10px; }
+.ep-video video { width: 100%; max-width: 480px; border-radius: var(--r-md); border: 1px solid var(--border); background: #000; }
 .btn.small { padding: 4px 10px; font-size: 12px; align-self: flex-start; }
 .scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
-.scene { aspect-ratio: 16/9; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
+.scene { aspect-ratio: 16/9; border-radius: var(--r-sm); overflow: hidden; background: var(--card-soft); border: 1px solid var(--border-soft); }
 .scene img { width: 100%; height: 100%; object-fit: cover; }
 .scene .pending { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; }
 .job-detail { display: flex; flex-direction: column; gap: 14px; }
