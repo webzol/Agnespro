@@ -9,11 +9,7 @@ import ToastStack from "./components/ToastStack.vue";
   <div class="app-shell">
     <NavBar />
     <div class="main">
-      <RouterView v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </RouterView>
+      <RouterView />
     </div>
   </div>
   <ToastStack />
