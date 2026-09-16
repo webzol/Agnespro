@@ -234,6 +234,7 @@ async function createJob() {
           <label class="chip-btn chip-select-wrap">
             <span class="chip-ico">▭</span>
             <span class="chip-lbl">比例</span>
+            <span class="chip-val">{{ LIB.aspect_ratios.find(a => a.id === aspectRatio)?.label || aspectRatio }}</span>
             <select v-model="aspectRatio" class="chip-native">
               <option v-for="a in LIB.aspect_ratios" :key="a.id" :value="a.id">{{ a.label }}</option>
             </select>
@@ -242,6 +243,7 @@ async function createJob() {
           <label class="chip-btn chip-select-wrap">
             <span class="chip-ico">▶</span>
             <span class="chip-lbl">剧集</span>
+            <span class="chip-val">{{ LIB.episode_counts.find(ec => ec.value === episodeCount)?.label || episodeCount + ' 集' }}</span>
             <select v-model.number="episodeCount" class="chip-native">
               <option v-for="ec in LIB.episode_counts" :key="ec.value" :value="ec.value">{{ ec.label }}</option>
             </select>
@@ -394,8 +396,9 @@ async function createJob() {
 .chip-select-wrap .chip-ico, .chip-select-wrap .chip-lbl, .chip-select-wrap .chip-caret { position: absolute; pointer-events: none; }
 .chip-select-wrap .chip-ico { left: 12px; top: 50%; transform: translateY(-50%); }
 .chip-select-wrap .chip-lbl { left: 36px; top: 50%; transform: translateY(-50%); }
+.chip-select-wrap .chip-val { margin-left: auto; background: var(--grad-soft); color: var(--primary-deep); padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; }
 .chip-select-wrap .chip-caret { right: 12px; top: 50%; transform: translateY(-50%); }
-.chip-native { appearance: none; background: transparent; border: 0; color: transparent; padding: 10px 12px 10px 70px; width: 100%; height: 100%; cursor: pointer; font-family: inherit; font-size: 13px; }
+.chip-native { appearance: none; background: transparent; border: 0; color: transparent; padding: 10px 12px 10px 70px; width: 100%; height: 100%; cursor: pointer; font-family: inherit; font-size: 13px; position: absolute; inset: 0; }
 .chip-native option { color: #1a1a1a; background: #fff; }
 
 .model-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }

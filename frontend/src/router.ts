@@ -3,7 +3,6 @@ import HomeView from "@/views/HomeView.vue";
 import NewJobView from "@/views/NewJobView.vue";
 import JobsView from "@/views/JobsView.vue";
 import JobDetailView from "@/views/JobDetailView.vue";
-import SettingsView from "@/views/SettingsView.vue";
 import AdminView from "@/views/AdminView.vue";
 import DocsView from "@/views/DocsView.vue";
 import ScriptTemplatesView from "@/views/ScriptTemplatesView.vue";
@@ -16,7 +15,6 @@ const routes = [
   { path: "/new",       name: "new",       component: NewJobView },
   { path: "/jobs",      name: "jobs",      component: JobsView },
   { path: "/detail/:id", name: "detail",   component: JobDetailView },
-  { path: "/settings",  name: "settings",  component: SettingsView },
   { path: "/admin",     name: "admin",     component: AdminView },
   { path: "/docs",      name: "docs",      component: DocsView },
   { path: "/templates", name: "templates", component: ScriptTemplatesView },
