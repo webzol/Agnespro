@@ -64,6 +64,17 @@ onMounted(async () => {
   // Default genre name
   const g = LIB.value.genres.find(x => x.id === genreId.value);
   if (g) genreName.value = g.name;
+
+  // Apply pre-loaded template (from /templates → "使用此模板")
+  const raw = sessionStorage.getItem("agnes_template");
+  if (raw) {
+    try {
+      const tpl = JSON.parse(raw) as { title: string; script: string };
+      if (tpl.title) title.value = tpl.title;
+      if (tpl.script) script.value = tpl.script;
+    } catch { /* ignore */ }
+    sessionStorage.removeItem("agnes_template");
+  }
 });
 
 // === Style library modal ===
